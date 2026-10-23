@@ -1,5 +1,22 @@
 # App Store screenshots
 
+Two stages. `FirelightScreenshots` photographs the app into
+`docs/screenshots/`; `scripts/make_store_screenshots.py` frames those on a
+branded background with a headline and writes `docs/store/`, which is what
+gets uploaded. Raw captures are accurate and dull — the listing is the only
+thing most people see of an app they have not installed.
+
+```bash
+python3 scripts/make_store_screenshots.py
+```
+
+Both stages output 1320 × 2868, Apple's required 6.9" size. Each caption
+carries a `trim`: how much empty screen to cut from the bottom of a capture
+before framing it. The plate bleeds off the frame anyway, so the cut is
+invisible and the dead space at the foot of the player and the library grid
+does not reach the listing.
+
+
 Generated, not taken by hand. `Screenshots/AppStoreScreenshots.swift` drives
 the app and writes full-resolution PNGs into `docs/screenshots/`:
 
