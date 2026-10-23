@@ -103,7 +103,7 @@ Written. `PRIVACY.md` is the canonical copy and `docs/privacy.html` is the
 hostable one.
 
 Turn on GitHub Pages with the source set to the `docs/` folder on `main`, and
-the policy is live at `https://<user>.github.io/firelight/privacy.html` with
+the policy is live at `https://scwill12.github.io/firelight-privacy/` — live, verified with
 no further setup. Paste that into App Information → Privacy Policy URL, and
 **open it yourself first** — a link that 404s is a rejection.
 
@@ -202,7 +202,7 @@ shelves and placeholder tiles read as an unfinished app.
 - [ ] iCloud container assigned to the app
 - [ ] App record created
 - [ ] Four consumables created and Ready to Submit
-- [x] Privacy policy written — still needs GitHub Pages turned on and the URL entered
+- [x] Privacy policy written, hosted and verified — URL still to be entered in App Store Connect
 - [ ] Privacy label set to Data Not Collected
 - [ ] Version bumped to 1.0.0
 - [ ] Build uploaded and processed

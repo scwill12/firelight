@@ -38,6 +38,8 @@ public final class PlaybackController: PlaybackIntentHandling {
     public var smartRewind: SmartRewind = .default
     /// Whether the clock reads against the chapter or the book.
     public private(set) var timeDisplay: TimeDisplay = .default
+    /// Whether to add a Live Activity to the lock screen's Now Playing.
+    public private(set) var liveActivityPreference: LiveActivityPreference = .default
 
     // Sleep timer
     public private(set) var sleepMode: SleepTimerMode = .off
@@ -95,6 +97,7 @@ public final class PlaybackController: PlaybackIntentHandling {
         self.skipInterval = settings.skipInterval
         self.smartRewind = settings.smartRewind
         self.timeDisplay = settings.timeDisplay
+        self.liveActivityPreference = settings.liveActivityPreference
 
         engine.onPositionChange = { [weak self] position in
             self?.handlePositionChange(position)
@@ -260,6 +263,13 @@ public final class PlaybackController: PlaybackIntentHandling {
         rate = newRate
         engine.setRate(newRate)
         if let itemID { settings.setRate(newRate, forItemID: itemID) }
+        updateNowPlaying()
+    }
+
+    public func setLiveActivityPreference(_ preference: LiveActivityPreference) {
+        liveActivityPreference = preference
+        settings.liveActivityPreference = preference
+        if !preference.isOn { liveActivity.end() }
         updateNowPlaying()
     }
 
@@ -523,8 +533,13 @@ public final class PlaybackController: PlaybackIntentHandling {
             duration: duration,
             isPlaying: isPlaying
         )
-        if isPlaying || liveActivity.isRunning {
+        // The system's Now Playing control already covers the lock screen and
+        // the Dynamic Island. This is only added when the listener asked for
+        // it, so the default is one control rather than two of the same.
+        if liveActivityPreference.isOn, isPlaying || liveActivity.isRunning {
             liveActivity.start(itemID: itemID, title: title, author: author, state: state)
+        } else if !liveActivityPreference.isOn, liveActivity.isRunning {
+            liveActivity.end()
         }
         #endif
     }
@@ -603,6 +618,16 @@ public struct PlaybackSettingsStore: @unchecked Sendable {
         }
         nonmutating set {
             defaults.set(newValue.rawValue, forKey: "firelight.timeDisplay")
+        }
+    }
+
+    public var liveActivityPreference: LiveActivityPreference {
+        get {
+            guard let raw = defaults.string(forKey: "firelight.liveActivity") else { return .default }
+            return LiveActivityPreference(rawValue: raw) ?? .default
+        }
+        nonmutating set {
+            defaults.set(newValue.rawValue, forKey: "firelight.liveActivity")
         }
     }
 

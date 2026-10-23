@@ -58,6 +58,26 @@ public enum TimeDisplay: String, Sendable, Hashable, Codable, CaseIterable, Iden
     public var id: String { rawValue }
 }
 
+/// Whether to add a Live Activity on top of the system's Now Playing control.
+///
+/// Off by default, and the reason is worth stating: iOS already draws a Now
+/// Playing control on the lock screen and in the Dynamic Island for *any*
+/// audio app, with artwork, a scrubber and an AirPlay picker. A Live Activity
+/// showing the same book is a second set of transport controls for one piece
+/// of audio — which is what it looks like on the lock screen, and what Apple's
+/// own guidance steers away from.
+///
+/// It stays available because some people prefer its larger buttons, but
+/// nobody should have to turn it off to get one control instead of two.
+public enum LiveActivityPreference: String, Sendable, Hashable, Codable, CaseIterable {
+    case off
+    case on
+
+    public static let `default` = LiveActivityPreference.off
+
+    public var isOn: Bool { self == .on }
+}
+
 /// How far the skip buttons jump.
 public struct SkipInterval: Sendable, Hashable, Codable {
     public static let options: [TimeInterval] = [5, 10, 15, 20, 30, 45, 60, 90]

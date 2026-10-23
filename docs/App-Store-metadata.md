@@ -89,14 +89,14 @@ For 1.0:
 
 | Field | Value |
 | --- | --- |
-| Privacy policy | `https://<user>.github.io/firelight/privacy.html` |
-| Support | `https://github.com/<user>/firelight/issues` |
+| Privacy policy | `https://scwill12.github.io/firelight-privacy/` |
+| Support | needs a public home — Firelight's repo is private |
 | Marketing | optional, the repo README is fine |
 
-The privacy policy lives at `docs/privacy.html` in this repo. Turn on GitHub
-Pages with the source set to the `docs/` folder on `main` and that URL works
-with no further setup. **Open the URL yourself before pasting it in** — a
-privacy policy link that 404s is a rejection.
+The privacy policy is live and verified. **Support URL is still open**: App
+Store Connect requires one, and the usual answer — the repository's issues
+page — is not reachable while Firelight's repo is private. Either make that
+repo public, or point support at a page in `firelight-privacy`.
 
 ## App Review notes
 

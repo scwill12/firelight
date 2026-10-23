@@ -570,3 +570,40 @@ struct SeekGuardTests {
         #expect(AudioEngine.clamp(.infinity, to: .nan) == 0)
     }
 }
+
+@Suite("Lock screen preference")
+struct LiveActivityPreferenceTests {
+    @Test("Off by default, so the lock screen shows one control not two")
+    func defaultsToOff() throws {
+        let suite = "firelight.tests.liveActivity.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        #expect(PlaybackSettingsStore(defaults: defaults).liveActivityPreference == .off)
+        #expect(!LiveActivityPreference.default.isOn)
+    }
+
+    @Test("The choice survives a round trip")
+    func roundTrips() throws {
+        let suite = "firelight.tests.liveActivity.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = PlaybackSettingsStore(defaults: defaults)
+
+        store.liveActivityPreference = .on
+        #expect(store.liveActivityPreference == .on)
+        #expect(store.liveActivityPreference.isOn)
+        store.liveActivityPreference = .off
+        #expect(store.liveActivityPreference == .off)
+    }
+
+    @Test("An unrecognised stored value falls back rather than throwing")
+    func unknownValueFallsBack() throws {
+        let suite = "firelight.tests.liveActivity.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        defaults.set("sometimes", forKey: "firelight.liveActivity")
+        #expect(PlaybackSettingsStore(defaults: defaults).liveActivityPreference == .off)
+    }
+}

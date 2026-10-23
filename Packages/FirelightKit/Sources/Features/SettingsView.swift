@@ -25,6 +25,7 @@ public struct SettingsView: View {
             List {
                 accountsSection
                 serversSection
+                lockScreenSection
                 followAlongSection
                 foundationSection
                 aboutSection
@@ -91,6 +92,23 @@ public struct SettingsView: View {
             if environment.session.users.count > 1 {
                 Text("Switching takes a moment while Firelight reconnects.", bundle: .module)
             }
+        }
+    }
+
+    // MARK: - Lock screen
+
+    private var lockScreenSection: some View {
+        Section {
+            Toggle(isOn: Binding(
+                get: { environment.player.liveActivityPreference.isOn },
+                set: { environment.player.setLiveActivityPreference($0 ? .on : .off) }
+            )) {
+                Text("Add Firelight's own control", bundle: .module)
+            }
+        } header: {
+            Text("Lock screen", bundle: .module)
+        } footer: {
+            Text("iOS already shows a Now Playing control while a book is playing. Turn this on to add Firelight's own on top of it — larger buttons, but two controls for one book.", bundle: .module)
         }
     }
 
