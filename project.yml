@@ -52,6 +52,12 @@ targets:
     platform: iOS
     sources:
       - path: App
+        # A StoreKit configuration is a development file. Left in the target's
+        # sources it is copied into the app bundle and shipped to users, which
+        # is both pointless and a description of your pricing nobody asked for.
+        # The scheme still points at it by path; it does not need to be built.
+        excludes:
+          - "*.storekit"
     dependencies:
       - package: FirelightKit
         product: Features

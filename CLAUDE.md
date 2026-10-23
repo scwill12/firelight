@@ -455,25 +455,29 @@ killing a run part-way skips every cleanup path, which is how two screenshot
 runs ended up playing an audiobook into a room. Anything that drives playback
 unattended passes the flag.
 
-## StoreKit in the schemes
+## The tip jar does not load products locally — unresolved
 
-`App/Firelight.storekit` holds the four tip products. Two things about how it
-reaches a scheme, both found the hard way:
+`App/Firelight.storekit` holds all four tips with prices and descriptions,
+and `project.yml` points both schemes at it. It still does not work:
+`Product.products(for:)` returns **zero products and throws nothing**, so the
+tip jar shows its empty state everywhere — `xcodebuild test`, and ⌘R.
 
-- XcodeGen writes its path **one level short**
-  (`../../App/Firelight.storekit`), which resolves inside the `.xcodeproj`
-  and silently matches nothing — so the tip jar showed "The App Store isn't
-  reachable right now" even when it looked configured.
-- XcodeGen only writes it into the **Run** action, never the Test action.
+Ruled out, so nobody repeats them:
 
-`scripts/patch_schemes.py` fixes both after generation, and runs from
-`scripts/build.sh generate`. It fails loudly if the generated XML changes
-shape, because a silent no-op is the usual way post-processing like this rots.
+- The file is malformed. It is not: valid JSON, correct top-level keys,
+  four consumables.
+- The file is missing from the project. It is not — it is a file reference,
+  though it is wrongly a *Resource* of the app target, which means it ships
+  in the bundle and should be excluded.
+- The path is wrong. XcodeGen writes `../../App/Firelight.storekit`, which
+  resolves inside the `.xcodeproj` and matches nothing. Correcting it to
+  `../../../` made the path resolve — and changed nothing.
+- Only the Run action has it. Copying the reference into the Test action
+  also changed nothing.
 
-Even with both fixed, **a StoreKit Testing configuration does not reach the
-app-under-test when a UI test runner launches it**. The tip jar therefore
-cannot be screenshotted by `FirelightScreenshots`; that one is taken by hand
-from a normal run. See `docs/App-Store-tip-products.md`.
+**Do not fight this to test the tip jar.** Once the four products exist in
+App Store Connect, a sandbox or TestFlight build loads them for real. That is
+the shorter path, and it is the one the release needs anyway.
 
 ## Rules that are not negotiable
 

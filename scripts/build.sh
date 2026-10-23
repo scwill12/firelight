@@ -26,10 +26,6 @@ filter() {
 generate() {
   command -v xcodegen >/dev/null || { echo "xcodegen not found: brew install xcodegen"; exit 1; }
   xcodegen generate
-  # XcodeGen puts the StoreKit configuration on the Run action only, and a UI
-  # test is launched from the Test action. Without this the tip jar has no
-  # products under `xcodebuild test`.
-  python3 "$(dirname "$0")/patch_schemes.py"
 }
 
 simulator_id() {

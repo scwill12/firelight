@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import StoreKit
 
 /// The tip jar.
@@ -62,6 +63,7 @@ public final class TipJar {
     public private(set) var failure: String?
 
     private static let hasTippedKey = "firelight.hasTipped"
+    private let logger = Logger(subsystem: "com.colewilliams.firelight", category: "TipJar")
 
     public init() {
         hasTipped = UserDefaults.standard.bool(forKey: Self.hasTippedKey)
@@ -76,7 +78,11 @@ public final class TipJar {
             products = loaded.sorted { $0.price < $1.price }
         } catch {
             // A store that will not answer is not worth an error banner on a
-            // screen nobody has to use.
+            // screen nobody has to use — but swallowing the reason entirely
+            // made an empty tip jar impossible to tell apart from a
+            // misconfigured one, which cost an afternoon. The user still sees
+            // nothing; whoever is debugging sees why.
+            logger.error("Tip products did not load: \(error.localizedDescription, privacy: .public)")
             failure = nil
         }
     }

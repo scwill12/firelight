@@ -58,11 +58,13 @@ xcrun simctl shutdown all
 
 ## What it does not capture
 
-The tip jar. XcodeGen puts the StoreKit configuration on the scheme's Run
-action, `xcodebuild test` does not inherit it, and without it the screen shows
-an error rather than four tips. The run detects that and skips rather than
-saving a screenshot of a failure. `docs/App-Store-tip-products.md` says how to
-take that one by hand.
+The tip jar. The local StoreKit configuration does not load products — see
+`CLAUDE.md` for what has been ruled out — so the screen shows its empty state.
+The run detects that and skips rather than saving a screenshot of a failure.
+
+Take that one once the products exist in App Store Connect, when a TestFlight
+or sandbox build fills the tip jar for real. `docs/App-Store-tip-products.md`
+has the detail.
 
 ## The library behind them
 
