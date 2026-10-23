@@ -5,9 +5,15 @@ counted here; anything with `<fill in>` needs a decision from you.
 
 ## Name and subtitle
 
-**Name** (30): `Firelight`
+**Name** (30): `Firelight: Books & Audiobooks` — 29. Registered.
 
-**Subtitle** (30): `Your Audiobookshelf library` — 27
+**Subtitle** (30): `Your self-hosted library` — 24
+
+The subtitle deliberately repeats nothing from the name. Apple indexes the
+two together, so "Audiobookshelf library" would have spent the subtitle on a
+word already in the name and on someone else's project name in a
+user-visible field. "Self-hosted" and "library" are both terms people search
+and neither appears above.
 
 ## Promotional text (170)
 
@@ -65,11 +71,15 @@ Editable without a new build, so use it for what changes.
 ## Keywords (100, comma-separated)
 
 ```
-audiobookshelf,audiobook,ebook,epub,self-hosted,player,listen,reader,podcast,offline,comics
+audiobookshelf,ebook,epub,m4b,player,listen,reader,podcast,offline,comics,chapters,sync
 ```
 
-92 characters. No spaces after commas — they count. Do not repeat the app
-name or the subtitle; Apple already indexes those.
+86 characters. No spaces after commas — they count.
+
+`audiobook` and `self-hosted` were dropped: both now appear in the name or
+the subtitle, and Apple already indexes those, so repeating them here wastes
+the field. `audiobookshelf` stays — it is not user-visible in keywords, and
+naming the server the app connects to is simply factual.
 
 ## What's New
 
