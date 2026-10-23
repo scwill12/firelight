@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firelight — Privacy Policy</title>
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1c1b19; --muted: #6b6762;
+    --rule: #e4e0da; --accent: #c2410c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16150f; --fg: #ece9e3; --muted: #9c968c;
+            --rule: #302d26; --accent: #f97316; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.65 ui-serif, Georgia, "Times New Roman", serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 36rem; margin: 0 auto; padding: 4rem 1rem 6rem; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  h2 {
+    font-size: 1.1rem; margin: 2.75rem 0 .75rem; letter-spacing: .02em;
+    text-transform: uppercase; font-family: ui-sans-serif, system-ui, sans-serif;
+    color: var(--accent);
+  }
+  .updated { color: var(--muted); font-size: .9rem; margin: 0 0 2rem;
+             font-family: ui-sans-serif, system-ui, sans-serif; }
+  ul { padding-left: 1.1rem; }
+  li { margin: .6rem 0; }
+  strong { font-weight: 600; }
+  code { font: .85em ui-monospace, SFMono-Regular, Menlo, monospace;
+         background: color-mix(in srgb, var(--fg) 7%, transparent);
+         padding: .1em .35em; border-radius: 4px; }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 3rem 0; }
+  footer { color: var(--muted); font-size: .9rem;
+           font-family: ui-sans-serif, system-ui, sans-serif; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Firelight — Privacy Policy</h1>
+  <p class="updated">Last updated 22 October 2026</p>
+
+  <h2>The short version</h2>
+  <p>Firelight collects nothing. There is no analytics, no advertising, no crash
+  reporting, no tracking, and no account with us — because there is no “us” to
+  have an account with. Firelight is a client for a server <strong>you</strong>
+  run. It talks to that server and to nothing else unless you explicitly turn on
+  one of the optional features below.</p>
+  <p>The App Store privacy label for Firelight is <strong>Data Not
+  Collected</strong>, and that is the whole truth rather than a technicality.</p>
+
+  <h2>What stays on your device</h2>
+  <ul>
+    <li><strong>Your server’s address and your credentials.</strong> Stored in the
+    iOS Keychain, in a shared access group so the app, its widgets and the share
+    extension reach the same tokens. Server addresses and tokens are redacted
+    before anything is written to a log or a diagnostic export.</li>
+    <li><strong>A cache of your library</strong> — titles, authors, cover art,
+    chapters and progress — so the app works without a connection.</li>
+    <li><strong>Your listening and reading positions</strong>, written to a local
+    journal before they are sent anywhere, so a lost connection cannot lose your
+    place.</li>
+    <li><strong>Downloaded books</strong>, in the app’s own container.</li>
+  </ul>
+  <p>None of this is transmitted to anyone. Deleting the app deletes all of it.</p>
+
+  <h2>What Firelight sends, and where</h2>
+  <p><strong>To your Audiobookshelf server, and only the one you configured:</strong>
+  your sign-in, requests for your library and files, and your playback positions.
+  That is the whole point of the app. Your server is yours; what it logs is
+  between you and it.</p>
+  <p>Firelight has no server of its own. There is no telemetry endpoint, no
+  “phone home” on launch, and no third-party SDK embedded in the app.</p>
+
+  <h2>Optional features that involve someone else</h2>
+  <p>Each is off until you turn it on, and each is the only thing that sends data
+  anywhere other than your own server.</p>
+  <ul>
+    <li><strong>iCloud sync for highlights.</strong> Passages you highlight and
+    notes you write sync through <em>your</em> private iCloud database so they
+    follow you between your devices. That is Apple’s infrastructure and your
+    private storage; the developer cannot read it. Your library, positions and
+    downloads are <em>not</em> synced.</li>
+    <li><strong>Hardcover.</strong> If you paste a Hardcover API token into
+    Settings, Firelight sends the title, author and reading status of books you
+    finish so your shelves there stay current. Nothing is sent until you supply a
+    token, and removing it stops it. Hardcover’s own policy governs what they do
+    with it.</li>
+    <li><strong>Send to Kindle.</strong> The file goes through your own mail or
+    share sheet to the Kindle address you entered. Amazon’s terms govern what
+    happens after that.</li>
+    <li><strong>Tips.</strong> Processed by Apple through In-App Purchase. Apple
+    does not share your payment details with the developer. Tips unlock nothing;
+    the whole app is free.</li>
+    <li><strong>Catch Me Up.</strong> Summaries are produced by Apple’s on-device
+    model on supported devices. The text never leaves your phone, and the model
+    is never given anything past where you have read.</li>
+  </ul>
+
+  <h2>Children</h2>
+  <p>Kids Mode simplifies the library and can be locked behind your device
+  passcode. It changes what is shown; it collects nothing, because nothing is
+  collected from anyone.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the new version appears here and the date above
+  changes with it. Firelight is open source — if you would rather verify than
+  trust, the code is the policy: every network call the app can make lives in
+  <code>ABSEndpoints.swift</code> and <code>HardcoverClient.swift</code>.</p>
+
+  <hr>
+  <footer>Firelight is free and open source, released under the MIT licence.
+  Questions or corrections: open an issue on the repository.</footer>
+</main>
+</body>
+</html>

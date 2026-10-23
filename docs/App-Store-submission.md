@@ -7,8 +7,9 @@ is a provisioning failure half an hour later with an unhelpful message.
 ## Bottom line
 
 - Three bundle IDs to register, not one. The watch app is not shipping.
-- **Two hard blockers**: there is no privacy policy, and App Review will not
-  be able to use the app at all without a demo server. Both reject on sight.
+- **One hard blocker left**: App Review cannot use the app at all without
+  either a reachable demo server or a built-in sample library. The privacy
+  policy is written (`PRIVACY.md`, `docs/privacy.html`).
 - The four tip products must be created *and attached to the first build*,
   or the tip jar is dead on arrival.
 - Go to TestFlight first. Most of the app has never run on a device.
@@ -95,16 +96,21 @@ Two things that get this rejected:
   first comment — but the description must not imply otherwise, or it reads as
   paid functionality that isn't delivered.
 
-## 4. Privacy policy — missing, and required
+## 4. Privacy policy
 
-There is no privacy policy anywhere in this repo. It is required for every
-app including free ones with no data collection, and a missing URL is an
-instant rejection.
+Written. `PRIVACY.md` is the canonical copy and `docs/privacy.html` is the
+hostable one.
 
-It can be short, because the truth is short: Firelight collects nothing, has
-no analytics and no accounts, talks only to the server the user configures,
-and keeps everything on the device or in the user's own iCloud. Host it on
-GitHub Pages from this repo and paste the URL into App Information.
+Turn on GitHub Pages with the source set to the `docs/` folder on `main`, and
+the policy is live at `https://<user>.github.io/firelight/privacy.html` with
+no further setup. Paste that into App Information → Privacy Policy URL, and
+**open it yourself first** — a link that 404s is a rejection.
+
+It discloses the three things that are easy to forget: highlights sync
+through the user's own iCloud, the optional Hardcover integration sends
+title, author and status to a third party, and send-to-Kindle hands the file
+to Amazon. All three are off until the user turns them on, which is what
+keeps the label at Data Not Collected.
 
 ## 5. Privacy label
 
@@ -193,7 +199,7 @@ shelves and placeholder tiles read as an unfinished app.
 - [ ] iCloud container assigned to the app
 - [ ] App record created
 - [ ] Four consumables created and Ready to Submit
-- [ ] Privacy policy written, hosted, URL entered
+- [x] Privacy policy written — still needs GitHub Pages turned on and the URL entered
 - [ ] Privacy label set to Data Not Collected
 - [ ] Version bumped to 1.0.0
 - [ ] Build uploaded and processed
