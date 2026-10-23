@@ -140,7 +140,7 @@ def main() -> int:
     if raw_url:
         say(f"Server URL supplied as an argument ({urllib.parse.urlparse(raw_url).scheme}://…)")
     else:
-        raw_url = input("Server URL (e.g. http://tower.local:13378): ").strip()
+        raw_url = input("Server URL (e.g. http://books.example.com:13378): ").strip()
     if not raw_url:
         print("No URL given.")
         return 2

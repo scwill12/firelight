@@ -90,13 +90,14 @@ For 1.0:
 | Field | Value |
 | --- | --- |
 | Privacy policy | `https://scwill12.github.io/firelight-privacy/` |
-| Support | needs a public home — Firelight's repo is private |
+| Support | `https://github.com/scwill12/firelight/issues` |
 | Marketing | optional, the repo README is fine |
 
-The privacy policy is live and verified. **Support URL is still open**: App
-Store Connect requires one, and the usual answer — the repository's issues
-page — is not reachable while Firelight's repo is private. Either make that
-repo public, or point support at a page in `firelight-privacy`.
+Both are live. The repository is public, so its issues page serves as the
+support URL; the privacy policy is hosted separately at
+`firelight-privacy`, which is where it stayed after being set up while this
+repo was still private. Leaving it there is fine — it works, and moving a
+privacy policy URL that App Store Connect has already accepted buys nothing.
 
 ## App Review notes
 
