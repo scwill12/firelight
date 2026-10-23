@@ -93,7 +93,7 @@ public final class DemoURLProtocol: URLProtocol, @unchecked Sendable {
     /// `/api/items/{id}/cover`
     private static func coverResource(forPath path: String) -> String? {
         guard path.hasSuffix("/cover"), let book = book(inPath: path) else { return nil }
-        return book.coverResource
+        return book.cover
     }
 
     /// `/api/items/{id}/file/{ino}` and `/api/items/{id}/ebook`
@@ -103,12 +103,12 @@ public final class DemoURLProtocol: URLProtocol, @unchecked Sendable {
             if book.tracks.contains(where: { $0.resource == ino }) {
                 return (ino, "m4a", "audio/mp4")
             }
-            if let file = book.fileResource, let ext = book.fileExtension, ino.hasPrefix(file) {
-                return (file, ext, "application/octet-stream")
+            if let file = book.file, ino.hasPrefix(file.resource) {
+                return (file.resource, file.ext, "application/octet-stream")
             }
         }
-        if path.hasSuffix("/ebook"), let file = book.fileResource, let ext = book.fileExtension {
-            return (file, ext, "application/octet-stream")
+        if path.hasSuffix("/ebook"), let file = book.file {
+            return (file.resource, file.ext, "application/octet-stream")
         }
         return nil
     }

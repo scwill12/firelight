@@ -2,94 +2,82 @@ import Foundation
 
 /// What the demo library contains, and the Audiobookshelf-shaped JSON for it.
 ///
-/// The JSON is written out by hand rather than encoded from `ABSKit`'s models,
-/// because those models have no public initialiser — they exist to be decoded,
-/// not built. Hand-written payloads drift, so `DemoCatalogueTests` decodes
-/// every one of them with the app's real decoder. If a field changes shape,
-/// that test fails rather than the demo quietly emptying itself.
+/// The contents come from `demo-library.json`, written by
+/// `scripts/make_demo_library.py` when it generates the audio. That matters
+/// for one field above all: a track's **duration is measured**, not guessed,
+/// and a wrong one puts every chapter mark after it in the wrong place. Had
+/// the durations been copied into Swift by hand they would drift the first
+/// time anyone re-ran the script.
+///
+/// The ABS payloads below are still written by hand, because `ABSKit`'s
+/// models have no public initialiser — they exist to be decoded, not built.
+/// Hand-written payloads drift too, so `DemoLibraryTests` decodes every one
+/// with the app's real decoder.
 public enum DemoCatalogue {
     public static let libraryID = "demo-library"
 
-    public struct Book: Sendable {
+    public struct Book: Sendable, Codable {
         public let id: String
         public let title: String
         public let author: String
+        public let year: String
+        public let blurb: String
+        /// Resource name of the cover PNG.
+        public let cover: String
         public let narrator: String?
-        public let coverResource: String
-        /// Audio chapters, in order. Empty for a book with no audio.
         public let tracks: [Track]
-        /// The bundled ebook or comic, if there is one.
-        public let fileResource: String?
-        public let fileExtension: String?
+        public let file: File?
+
+        public struct File: Sendable, Codable {
+            public let resource: String
+            public let ext: String
+        }
     }
 
-    public struct Track: Sendable {
+    public struct Track: Sendable, Codable {
         public let resource: String
         public let title: String
         public let duration: TimeInterval
+        /// Where this track starts in book time.
         public let offset: TimeInterval
     }
 
-    /// Durations are the real ones, measured when the audio was synthesised.
-    /// A wrong duration here would put every chapter mark in the wrong place.
-    public static let aliceTracks: [Track] = {
-        let measured: [(String, String, TimeInterval)] = [
-            ("alice-1", "Down the Rabbit-Hole", 31.831),
-            ("alice-2", "The Pool of Tears", 17.494),
-            ("alice-3", "A Caucus-Race", 14.081),
-        ]
-        var offset: TimeInterval = 0
-        return measured.map { resource, title, duration in
-            defer { offset += duration }
-            return Track(resource: resource, title: title, duration: duration, offset: offset)
+    /// Decoded once. An empty library would be a build mistake — the manifest
+    /// ships in the bundle — so it is worth being loud about in a debug build
+    /// rather than quietly showing a reviewer nothing.
+    public static let books: [Book] = {
+        guard let data = DemoBundle.data(named: "demo-library", extension: "json") else {
+            assertionFailure("demo-library.json is missing from DemoKit's resources.")
+            return []
+        }
+        do {
+            return try JSONDecoder().decode([Book].self, from: data)
+        } catch {
+            assertionFailure("demo-library.json did not decode: \(error)")
+            return []
         }
     }()
-
-    public static let books: [Book] = [
-        Book(
-            id: "demo-alice-audio",
-            title: "Alice's Adventures in Wonderland",
-            author: "Lewis Carroll",
-            narrator: "A synthesised voice",
-            coverResource: "cover-alice",
-            tracks: aliceTracks,
-            fileResource: nil,
-            fileExtension: nil
-        ),
-        Book(
-            id: "demo-alice-ebook",
-            title: "Alice's Adventures in Wonderland",
-            author: "Lewis Carroll",
-            narrator: nil,
-            coverResource: "cover-alice-ebook",
-            tracks: [],
-            fileResource: "alice",
-            fileExtension: "epub"
-        ),
-        Book(
-            id: "demo-comic",
-            title: "A Sample Comic",
-            author: "Firelight",
-            narrator: nil,
-            coverResource: "cover-comic",
-            tracks: [],
-            fileResource: "sample",
-            fileExtension: "cbz"
-        ),
-    ]
 
     public static func book(id: String) -> Book? {
         books.first { $0.id == id }
     }
 
-    public static var totalDuration: TimeInterval {
-        aliceTracks.reduce(0) { $0 + $1.duration }
-    }
-
     // MARK: - Payloads
 
     /// Epoch milliseconds, which is what ABS sends and what the decoder reads.
-    private static let addedAt = Date(timeIntervalSince1970: 1_735_689_600).timeIntervalSince1970 * 1000
+    private static let newestAddedAt = 1_735_689_600_000.0
+
+    /// Each book is "added" a day before the one in front of it.
+    ///
+    /// A library where everything arrived in the same millisecond sorts
+    /// alphabetically under any date order, which makes "Recently added" a
+    /// lie and reads as generated — because it is. Staggering costs nothing
+    /// and gives the shelves something true to sort on.
+    private static func addedAt(_ book: Book) -> Double {
+        let index = books.firstIndex { $0.id == book.id } ?? 0
+        let day = 86_400_000.0
+        return newestAddedAt - Double(index) * day
+    }
 
     public static var statusJSON: String {
         """
@@ -136,12 +124,7 @@ public enum DemoCatalogue {
 
     public static func itemJSON(_ book: Book) -> String {
         let duration = book.tracks.reduce(0) { $0 + $1.duration }
-        let chapters = book.tracks.enumerated().map { index, track in
-            """
-            {"id":\(index),"start":\(track.offset),\
-            "end":\(track.offset + track.duration),"title":"\(escaped(track.title))"}
-            """
-        }.joined(separator: ",")
+        let chapters = chaptersJSON(book)
 
         let audioFiles = book.tracks.enumerated().map { index, track in
             """
@@ -150,25 +133,27 @@ public enum DemoCatalogue {
             """
         }.joined(separator: ",")
 
-        let ebookFile = book.fileExtension.map {
+        let ebookFile = book.file.map {
             """
-            ,"ebookFile":{"ino":"\(book.fileResource ?? "")","ebookFormat":"\($0)",\
-            "metadata":{"filename":"\(book.fileResource ?? "").\($0)"}}
+            ,"ebookFile":{"ino":"\($0.resource)","ebookFormat":"\($0.ext)",\
+            "metadata":{"filename":"\($0.resource).\($0.ext)"}}
             """
         } ?? ""
 
         return """
         {"id":"\(book.id)","libraryId":"\(libraryID)","mediaType":"book",\
-        "addedAt":\(addedAt),"updatedAt":\(addedAt),"isMissing":false,"isInvalid":false,\
+        "addedAt":\(addedAt(book)),"updatedAt":\(addedAt(book)),"isMissing":false,"isInvalid":false,\
         "numFiles":\(max(book.tracks.count, 1)),"size":0,\
-        "media":{"id":"\(book.id)-media","coverPath":"/demo/\(book.coverResource).png",\
+        "media":{"id":"\(book.id)-media","coverPath":"/demo/\(book.cover).png",\
         "duration":\(duration),"numTracks":\(book.tracks.count),\
         "metadata":{"title":"\(escaped(book.title))","titleIgnorePrefix":"\(escaped(book.title))",\
         "subtitle":"","authorName":"\(escaped(book.author))",\
-        "narratorName":"\(escaped(book.narrator ?? ""))","seriesName":"","publishedYear":"1865",\
-        "description":"A short public-domain excerpt, bundled so Firelight has something to show before you connect your own server.",\
+        "narratorName":"\(escaped(book.narrator ?? ""))","seriesName":"",\
+        "publishedYear":"\(book.year)",\
+        "description":"\(escaped(book.blurb))",\
         "genres":["Classics"],"explicit":false,"language":"English"},\
-        "chapters":[\(chapters)],"audioFiles":[\(audioFiles)],"numAudioFiles":\(book.tracks.count)\(ebookFile)}}
+        "chapters":[\(chapters)],"audioFiles":[\(audioFiles)],\
+        "numAudioFiles":\(book.tracks.count)\(ebookFile)}}
         """
     }
 
@@ -182,26 +167,28 @@ public enum DemoCatalogue {
             """
         }.joined(separator: ",")
 
-        let chapters = book.tracks.enumerated().map { index, track in
+        let duration = book.tracks.reduce(0) { $0 + $1.duration }
+        return """
+        {"id":"\(sessionID)","libraryItemId":"\(book.id)","episodeId":null,\
+        "displayTitle":"\(escaped(book.title))","displayAuthor":"\(escaped(book.author))",\
+        "coverPath":"/demo/\(book.cover).png","duration":\(duration),\
+        "playMethod":0,"currentTime":0,"startTime":0,"timeListening":0,\
+        "startedAt":\(addedAt(book)),"updatedAt":\(addedAt(book)),\
+        "chapters":[\(chaptersJSON(book))],"audioTracks":[\(tracks)]}
+        """
+    }
+
+    private static func chaptersJSON(_ book: Book) -> String {
+        book.tracks.enumerated().map { index, track in
             """
             {"id":\(index),"start":\(track.offset),\
             "end":\(track.offset + track.duration),"title":"\(escaped(track.title))"}
             """
         }.joined(separator: ",")
-
-        let duration = book.tracks.reduce(0) { $0 + $1.duration }
-        return """
-        {"id":"\(sessionID)","libraryItemId":"\(book.id)","episodeId":null,\
-        "displayTitle":"\(escaped(book.title))","displayAuthor":"\(escaped(book.author))",\
-        "coverPath":"/demo/\(book.coverResource).png","duration":\(duration),\
-        "playMethod":0,"currentTime":0,"startTime":0,"timeListening":0,\
-        "startedAt":\(addedAt),"updatedAt":\(addedAt),\
-        "chapters":[\(chapters)],"audioTracks":[\(tracks)]}
-        """
     }
 
-    /// Quotation marks are the only character these strings can contain that
-    /// would break the JSON; everything else here is ours and plain.
+    /// Quotation marks and backslashes are the only characters these strings
+    /// can contain that would break the JSON; everything else is ours and plain.
     private static func escaped(_ text: String) -> String {
         text.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")

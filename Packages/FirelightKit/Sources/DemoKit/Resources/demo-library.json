@@ -1,0 +1,178 @@
+[
+  {
+    "id": "demo-alice",
+    "title": "Alice's Adventures in Wonderland",
+    "author": "Lewis Carroll",
+    "year": "1865",
+    "blurb": "A girl follows a waistcoated rabbit underground and finds the world has stopped obeying its own rules.",
+    "cover": "cover-alice",
+    "narrator": "A synthesised voice",
+    "tracks": [
+      {
+        "resource": "alice-1",
+        "title": "Down the Rabbit-Hole",
+        "duration": 27.083,
+        "offset": 0.0
+      },
+      {
+        "resource": "alice-2",
+        "title": "The Pool of Tears",
+        "duration": 17.494,
+        "offset": 27.083
+      },
+      {
+        "resource": "alice-3",
+        "title": "A Caucus-Race",
+        "duration": 14.081,
+        "offset": 44.577
+      }
+    ],
+    "file": {
+      "resource": "alice",
+      "ext": "epub"
+    }
+  },
+  {
+    "id": "demo-pride",
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "year": "1813",
+    "blurb": "Five sisters, a small fortune, and a great deal of being wrong about people.",
+    "cover": "cover-pride",
+    "narrator": "A synthesised voice",
+    "tracks": [
+      {
+        "resource": "pride-1",
+        "title": "A Single Man of Good Fortune",
+        "duration": 19.211,
+        "offset": 0.0
+      },
+      {
+        "resource": "pride-2",
+        "title": "Netherfield Is Taken",
+        "duration": 13.332,
+        "offset": 19.211
+      }
+    ],
+    "file": {
+      "resource": "pride",
+      "ext": "epub"
+    }
+  },
+  {
+    "id": "demo-frankenstein",
+    "title": "Frankenstein",
+    "author": "Mary Shelley",
+    "year": "1818",
+    "blurb": "A young scientist makes a living thing, and then will not look after it.",
+    "cover": "cover-frankenstein",
+    "narrator": "A synthesised voice",
+    "tracks": [
+      {
+        "resource": "frankenstein-1",
+        "title": "Letter One",
+        "duration": 15.585,
+        "offset": 0.0
+      }
+    ],
+    "file": {
+      "resource": "frankenstein",
+      "ext": "epub"
+    }
+  },
+  {
+    "id": "demo-holmes",
+    "title": "The Adventures of Sherlock Holmes",
+    "author": "Arthur Conan Doyle",
+    "year": "1892",
+    "blurb": "Twelve cases, one impossible lodger, and a narrator who never quite keeps up.",
+    "cover": "cover-holmes",
+    "narrator": "A synthesised voice",
+    "tracks": [
+      {
+        "resource": "holmes-1",
+        "title": "A Scandal in Bohemia",
+        "duration": 12.341,
+        "offset": 0.0
+      }
+    ],
+    "file": null
+  },
+  {
+    "id": "demo-dracula",
+    "title": "Dracula",
+    "author": "Bram Stoker",
+    "year": "1897",
+    "blurb": "A solicitor travels east on business and keeps a very careful diary.",
+    "cover": "cover-dracula",
+    "narrator": "A synthesised voice",
+    "tracks": [
+      {
+        "resource": "dracula-1",
+        "title": "Jonathan Harker's Journal",
+        "duration": 15.236,
+        "offset": 0.0
+      }
+    ],
+    "file": {
+      "resource": "dracula",
+      "ext": "epub"
+    }
+  },
+  {
+    "id": "demo-timemachine",
+    "title": "The Time Machine",
+    "author": "H. G. Wells",
+    "year": "1895",
+    "blurb": "An inventor explains that time is a direction, then demonstrates it.",
+    "cover": "cover-timemachine",
+    "narrator": null,
+    "tracks": [],
+    "file": {
+      "resource": "timemachine",
+      "ext": "epub"
+    }
+  },
+  {
+    "id": "demo-mobydick",
+    "title": "Moby-Dick",
+    "author": "Herman Melville",
+    "year": "1851",
+    "blurb": "A whaling voyage, a captain with one idea, and a great deal about whales.",
+    "cover": "cover-mobydick",
+    "narrator": null,
+    "tracks": [],
+    "file": {
+      "resource": "mobydick",
+      "ext": "epub"
+    }
+  },
+  {
+    "id": "demo-oz",
+    "title": "The Wonderful Wizard of Oz",
+    "author": "L. Frank Baum",
+    "year": "1900",
+    "blurb": "A Kansas farmhouse lands somewhere considerably stranger than Kansas.",
+    "cover": "cover-oz",
+    "narrator": null,
+    "tracks": [],
+    "file": {
+      "resource": "oz",
+      "ext": "epub"
+    }
+  },
+  {
+    "id": "demo-comic",
+    "title": "A Sample Comic",
+    "author": "Firelight",
+    "year": "2026",
+    "blurb": "A few generated pages, so the comic reader has something to open.",
+    "cover": "cover-comic",
+    "narrator": null,
+    "tracks": [],
+    "file": {
+      "resource": "sample",
+      "ext": "cbz"
+    }
+  }
+]

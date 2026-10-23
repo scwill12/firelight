@@ -38,6 +38,16 @@ struct DemoCataloguePayloadTests {
         #expect(response.libraries.first?.id == DemoCatalogue.libraryID)
     }
 
+    @Test("Each book is added before the one in front of it")
+    func addedDatesAreStaggered() throws {
+        let page = try decode(ABSLibraryItemsPage.self, DemoCatalogue.libraryItemsJSON)
+        let dates = page.results.compactMap(\.addedAt)
+        #expect(dates.count == DemoCatalogue.books.count)
+        // Strictly descending: equal dates would collapse "Recently added"
+        // back into an alphabetical list.
+        #expect(zip(dates, dates.dropFirst()).allSatisfy { $0 > $1 })
+    }
+
     @Test("The items page decodes and carries every demo book")
     func itemsPageDecodes() throws {
         let page = try decode(ABSLibraryItemsPage.self, DemoCatalogue.libraryItemsJSON)
@@ -58,15 +68,21 @@ struct DemoCataloguePayloadTests {
             // New Year in UTC and the evening before in a western timezone,
             // so asserting the year makes the test depend on where it runs.
             // A date read as seconds rather than milliseconds would land in
-            // 1970 and miss by decades.
+            // 1970 and miss by decades, which is what this catches.
+            //
+            // The window allows for the per-book stagger, which walks the
+            // dates back a day at a time so "Recently added" has something
+            // true to sort on.
             let addedAt = try #require(item.addedAt)
-            #expect(abs(addedAt.timeIntervalSince1970 - 1_735_689_600) < 1)
+            let drift = 1_735_689_600 - addedAt.timeIntervalSince1970
+            #expect(drift >= -1)
+            #expect(drift < 86_400 * Double(DemoCatalogue.books.count))
         }
     }
 
     @Test("The playback session decodes with tracks the engine can use")
     func playbackSessionDecodes() throws {
-        let book = try #require(DemoCatalogue.book(id: "demo-alice-audio"))
+        let book = try #require(DemoCatalogue.book(id: "demo-alice"))
         let session = try decode(
             ABSPlaybackSession.self,
             DemoCatalogue.playJSON(book, sessionID: "s")
@@ -84,11 +100,27 @@ struct DemoCataloguePayloadTests {
 
 @Suite("Demo library contents")
 struct DemoCatalogueContentTests {
+    @Test("The manifest decodes and is not empty")
+    func manifestLoads() {
+        #expect(DemoCatalogue.books.count >= 5)
+        #expect(DemoCatalogue.books.allSatisfy { !$0.title.isEmpty })
+        #expect(DemoCatalogue.books.allSatisfy { !$0.author.isEmpty })
+        // Ids must be unique, or `book(id:)` returns an arbitrary one.
+        #expect(Set(DemoCatalogue.books.map(\.id)).count == DemoCatalogue.books.count)
+    }
+
     @Test("Every book's cover is actually in the bundle")
     func coversExist() {
         for book in DemoCatalogue.books {
-            #expect(DemoBundle.url(named: book.coverResource, extension: "png") != nil)
+            #expect(DemoBundle.url(named: book.cover, extension: "png") != nil)
         }
+    }
+
+    @Test("Something to listen to and something to read, or the demo shows nothing off")
+    func libraryHasBothKinds() {
+        #expect(DemoCatalogue.books.contains { !$0.tracks.isEmpty })
+        #expect(DemoCatalogue.books.contains { $0.file?.ext == "epub" })
+        #expect(DemoCatalogue.books.contains { $0.file?.ext == "cbz" })
     }
 
     @Test("Every audio track is actually in the bundle")
@@ -103,26 +135,28 @@ struct DemoCatalogueContentTests {
     @Test("Every ebook and comic is actually in the bundle")
     func filesExist() throws {
         for book in DemoCatalogue.books {
-            guard let name = book.fileResource, let ext = book.fileExtension else { continue }
-            #expect(DemoBundle.url(named: name, extension: ext) != nil)
+            guard let file = book.file else { continue }
+            #expect(DemoBundle.url(named: file.resource, extension: file.ext) != nil)
         }
     }
 
-    @Test("Track offsets run end to end, so chapter marks land correctly")
+    @Test("Every book's track offsets run end to end, so chapter marks land correctly")
     func offsetsAreContiguous() {
-        var expected: TimeInterval = 0
-        for track in DemoCatalogue.aliceTracks {
-            #expect(abs(track.offset - expected) < 0.001)
-            expected += track.duration
+        for book in DemoCatalogue.books {
+            var expected: TimeInterval = 0
+            for track in book.tracks {
+                #expect(abs(track.offset - expected) < 0.001, "\(book.title) is misaligned")
+                #expect(track.duration > 0, "\(book.title) has a zero-length chapter")
+                expected += track.duration
+            }
         }
-        #expect(abs(DemoCatalogue.totalDuration - expected) < 0.001)
     }
 
     @Test("A demo book reports bundled tracks; a real one reports none")
     func localTracksOnlyForDemoBooks() {
-        #expect(DemoMode.localTracks(forItemID: "demo-alice-audio").count == 3)
+        #expect(DemoMode.localTracks(forItemID: "demo-alice").count == 3)
         #expect(DemoMode.localTracks(forItemID: "li_somethingreal").isEmpty)
-        #expect(DemoMode.localFile(forItemID: "demo-alice-ebook") != nil)
+        #expect(DemoMode.localFile(forItemID: "demo-mobydick") != nil)
         #expect(DemoMode.localFile(forItemID: "li_somethingreal") == nil)
     }
 }
@@ -163,7 +197,7 @@ struct DemoURLProtocolTests {
     @Test("Covers come back as image bytes, not JSON")
     func servesCovers() {
         let (status, body, type) = DemoURLProtocol.respond(
-            to: request("GET", "/api/items/demo-alice-audio/cover")
+            to: request("GET", "/api/items/demo-alice/cover")
         )
         #expect(status == 200)
         #expect(type == "image/png")
@@ -175,7 +209,7 @@ struct DemoURLProtocolTests {
     @Test("Audio files come back as audio")
     func servesAudio() {
         let (status, body, type) = DemoURLProtocol.respond(
-            to: request("GET", "/api/items/demo-alice-audio/file/alice-1")
+            to: request("GET", "/api/items/demo-alice/file/alice-1")
         )
         #expect(status == 200)
         #expect(type == "audio/mp4")
@@ -184,7 +218,7 @@ struct DemoURLProtocolTests {
 
     @Test("Writes are accepted rather than failed, because the demo is read-only")
     func acceptsWrites() {
-        for (method, path) in [("PATCH", "/api/me/progress/demo-alice-audio"),
+        for (method, path) in [("PATCH", "/api/me/progress/demo-alice"),
                                ("POST", "/api/session/demo-session/sync"),
                                ("POST", "/api/session/demo-session/close")] {
             let (status, _, _) = DemoURLProtocol.respond(to: request(method, path))
@@ -195,7 +229,7 @@ struct DemoURLProtocolTests {
     @Test("Opening a demo book returns a playable session")
     func servesPlaybackSession() throws {
         let (status, body, _) = DemoURLProtocol.respond(
-            to: request("POST", "/api/items/demo-alice-audio/play")
+            to: request("POST", "/api/items/demo-alice/play")
         )
         #expect(status == 200)
         let session = try ABSJSON.decoder.decode(ABSPlaybackSession.self, from: body)

@@ -431,6 +431,16 @@ a reviewer.
 text, a synthesised voice, covers drawn from nothing. Nothing in it belongs to
 anyone else, and that is a licensing requirement, not a preference.
 
+The script also writes `demo-library.json`, which `DemoCatalogue` decodes at
+runtime. **Durations are measured there, not written by hand** — a duration
+copied into Swift drifts the first time anyone re-runs the script, and a wrong
+one puts every chapter mark after it in the wrong place. Adding a book means
+editing the script and re-running it; no Swift changes.
+
+`docs/App-Store-screenshots.md` covers the other thing this library is for:
+the store screenshots photograph it rather than a real server, because
+publishers' cover art has no business in App Store marketing material.
+
 ## Rules that are not negotiable
 
 1. One phase at a time. Stop at its checkpoint and print the device test list.

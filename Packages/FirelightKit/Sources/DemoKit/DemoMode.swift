@@ -53,12 +53,14 @@ public extension DemoMode {
         }
     }
 
+    /// Total length of a demo book, for the shelves that sort by it.
+    static func duration(forItemID itemID: String) -> TimeInterval {
+        DemoCatalogue.book(id: itemID)?.tracks.reduce(0) { $0 + $1.duration } ?? 0
+    }
+
     /// The bundled ebook or comic for a demo book.
     static func localFile(forItemID itemID: String) -> URL? {
-        guard let book = DemoCatalogue.book(id: itemID),
-              let name = book.fileResource,
-              let ext = book.fileExtension
-        else { return nil }
-        return DemoBundle.url(named: name, extension: ext)
+        guard let book = DemoCatalogue.book(id: itemID), let file = book.file else { return nil }
+        return DemoBundle.url(named: file.resource, extension: file.ext)
     }
 }
