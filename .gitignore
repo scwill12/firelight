@@ -14,3 +14,7 @@ Packages/*/.build/
 # Machine-specific simulator UDID caches.
 .firelight-ipad-sim
 .firelight-*-sim
+
+# App Store Connect API private keys — never commit these.
+AuthKey_*.p8
+*.p8

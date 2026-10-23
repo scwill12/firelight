@@ -152,6 +152,36 @@ FIRELIGHT_TEAM_ID=<your team id> scripts/build.sh generate
 Keep `FIRELIGHT_TEAM_ID` exported or the generated project loses its signing
 team and device builds stop working.
 
+## 6b. Push the listing copy with the API
+
+`scripts/appstore_metadata.py` writes the subtitle, promotional text,
+description, keywords and What's New onto version 1.0, plus the privacy and
+support URLs onto the app info, and uploads `docs/store/*.png`.
+
+```bash
+export ASC_ISSUER_ID=...     # Users and Access → Integrations → Keys
+export ASC_KEY_ID=...        # the 10-character key id
+export ASC_KEY_PATH=~/private_keys/AuthKey_XXXXXXXXXX.p8
+
+python3 scripts/appstore_metadata.py                      # dry run
+python3 scripts/appstore_metadata.py --apply --screenshots
+```
+
+Credentials come from the environment and the key from a path you control —
+nothing secret is in this repository, and `*.p8` is gitignored so a key
+dropped in the working directory cannot be committed by accident.
+
+Dry run is the default. It talks to the real app record and prints what it
+would set, so a wrong app or a missing version shows up before anything is
+written.
+
+It deliberately leaves **App Privacy, pricing, in-app purchases and
+submission** alone: two of those are attestations or money, and the last is a
+one-way door.
+
+The `.p8` downloads exactly once. If it is lost, revoke the key and make a
+new one.
+
 ## 7. Archive and upload
 
 Confirmed working as of the last check — the archive builds and signs with the
