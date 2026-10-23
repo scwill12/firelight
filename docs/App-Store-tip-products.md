@@ -24,12 +24,27 @@ Each product needs one, 1024 × 1024 or larger, and one shot of the tip jar
 serves all four: the reviewer is checking that the purchase exists where the
 listing says it does.
 
-**The automated run cannot take it.** XcodeGen writes the StoreKit
-configuration into the scheme's *Run* action only, and `xcodebuild test` does
-not inherit it, so under the screenshot run the products never load and the
-screen reads "The App Store isn't reachable right now."
+**The automated run cannot take it**, and not for the reason it first
+appeared. Two things were wrong and only one of them was fixable:
 
-Running the app normally does work, because that is the Run action:
+1. XcodeGen writes the StoreKit configuration into the scheme's *Run* action
+   only. `scripts/patch_schemes.py` now copies it into the Test action too.
+2. XcodeGen also wrote the path one level short —
+   `../../App/Firelight.storekit`, which resolves *inside* the `.xcodeproj`
+   rather than into the repository, so it pointed at nothing. The same script
+   corrects it to `../../../`.
+
+With both fixed the products still do not load under `xcodebuild test`: a
+StoreKit Testing configuration is not applied to the app-under-test when a UI
+test runner launches it. That one is Apple's, not ours.
+
+Running the app from Xcode uses the Run action directly, which is the path
+that should work — the configuration there now points at a file that exists,
+where before it did not. **Not verified by me**, because driving Xcode's UI is
+outside what I can do; if the tip jar is still empty on ⌘R, say so and the
+next thing to check is Edit Scheme → Run → Options → StoreKit Configuration.
+
+To take the shot:
 
 1. Open the project in Xcode and press ⌘R.
 2. Settings → Support Firelight. All four tips load from
@@ -37,10 +52,9 @@ Running the app normally does work, because that is the Run action:
 3. Screenshot it (⌘S in the Simulator), then crop square — App Store Connect
    wants at least 1024 on the short edge and will not crop for you.
 
-If you would rather automate it, the fix is to copy the
-`StoreKitConfigurationFileReference` element from the scheme's `LaunchAction`
-into its `TestAction`. That means post-processing generated XML, which is why
-it is not done here.
+`scripts/patch_schemes.py` runs as part of `scripts/build.sh generate`. It
+fails loudly rather than silently if XcodeGen's output changes shape, which is
+the usual failure mode for post-processing generated files.
 
 ## Review notes, per product
 

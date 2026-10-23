@@ -455,6 +455,26 @@ killing a run part-way skips every cleanup path, which is how two screenshot
 runs ended up playing an audiobook into a room. Anything that drives playback
 unattended passes the flag.
 
+## StoreKit in the schemes
+
+`App/Firelight.storekit` holds the four tip products. Two things about how it
+reaches a scheme, both found the hard way:
+
+- XcodeGen writes its path **one level short**
+  (`../../App/Firelight.storekit`), which resolves inside the `.xcodeproj`
+  and silently matches nothing — so the tip jar showed "The App Store isn't
+  reachable right now" even when it looked configured.
+- XcodeGen only writes it into the **Run** action, never the Test action.
+
+`scripts/patch_schemes.py` fixes both after generation, and runs from
+`scripts/build.sh generate`. It fails loudly if the generated XML changes
+shape, because a silent no-op is the usual way post-processing like this rots.
+
+Even with both fixed, **a StoreKit Testing configuration does not reach the
+app-under-test when a UI test runner launches it**. The tip jar therefore
+cannot be screenshotted by `FirelightScreenshots`; that one is taken by hand
+from a normal run. See `docs/App-Store-tip-products.md`.
+
 ## Rules that are not negotiable
 
 1. One phase at a time. Stop at its checkpoint and print the device test list.
