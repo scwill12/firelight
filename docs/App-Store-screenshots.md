@@ -1,5 +1,51 @@
 # App Store screenshots
 
+Generated, not taken by hand. `Screenshots/AppStoreScreenshots.swift` drives
+the app and writes full-resolution PNGs into `docs/screenshots/`:
+
+```bash
+xcrun simctl create "Firelight-Shots" \
+  com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max \
+  com.apple.CoreSimulator.SimRuntime.iOS-26-4
+xcrun simctl boot <udid>
+xcrun simctl status_bar <udid> override --time "9:41" \
+  --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3
+
+xcodebuild test -project Firelight.xcodeproj \
+  -scheme FirelightScreenshots -destination "id=<udid>"
+```
+
+An iPhone 17 Pro Max captures at **1320 × 2868**, which is Apple's required
+6.9" size. The status-bar override is what puts 9:41 and a full battery in
+every shot.
+
+It has its own scheme, so `scripts/build.sh test` stays fast and stays about
+correctness. This is a release chore, not a check.
+
+## It photographs the demo library on purpose
+
+Never screenshot a real Audiobookshelf library for the store listing. Those
+covers are publishers' artwork, and putting them in App Store marketing
+material is a copyright problem the app itself does not have. The demo
+library is public-domain text, a synthesised voice and covers drawn by
+`scripts/make_demo_library.py` — nothing in it belongs to anyone else.
+
+## Where the path comes from
+
+The destination is derived from `#filePath`, not from the environment.
+`xcodebuild` does not forward `TEST_RUNNER_*` into the test process here —
+checked by dumping the environment and finding nothing — and a bare
+`NAME=value` on the command line is a *build setting*, not an environment
+variable. `SCREENSHOT_DIR` still overrides it if it ever arrives.
+
+## Known weakness
+
+The demo library holds three books, so the shelves photograph sparse and the
+lower third of the home screen is empty. Adding more public-domain titles to
+`make_demo_library.py` would improve the listing and the demo at the same
+time; covers cost about 24 KB each and an ebook-only entry needs no audio.
+
+
 What to capture, and why each one is there. Apple requires 6.9" and 6.5"
 iPhone sizes and a 13" iPad size; everything else is generated from those.
 

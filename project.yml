@@ -143,6 +143,21 @@ targets:
         SKIP_INSTALL: YES
 
   # ------------------------------------------------------------------- Tests ---
+  # Drives the app and writes App Store screenshots. Not part of the normal
+  # test run — it is a release chore, not a check, and it is slow.
+  FirelightScreenshots:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Screenshots
+    dependencies:
+      - target: Firelight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.colewilliams.firelight.screenshots
+        TEST_TARGET_NAME: Firelight
+        GENERATE_INFOPLIST_FILE: YES
+
   FirelightTests:
     type: bundle.unit-test
     platform: iOS
@@ -188,6 +203,19 @@ schemes:
         - FirelightTests
     archive:
       config: Release
+  # Its own scheme so `scripts/build.sh test` stays fast and about
+  # correctness. Run it deliberately, when the store listing needs refreshing.
+  FirelightScreenshots:
+    build:
+      targets:
+        Firelight: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - FirelightScreenshots
+
   FirelightWatch:
     build:
       targets:
