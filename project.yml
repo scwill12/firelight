@@ -26,7 +26,7 @@ settings:
     # FIRELIGHT_TEAM_ID before `scripts/build.sh generate`, or set the team in
     # Xcode afterwards. Without it, simulator builds still work.
     DEVELOPMENT_TEAM: ${FIRELIGHT_TEAM_ID}
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_LANGUAGE: en
     SWIFT_EMIT_LOC_STRINGS: YES

@@ -15,7 +15,21 @@ is a provisioning failure half an hour later with an unhelpful message.
   or the tip jar is dead on arrival.
 - Go to TestFlight first. Most of the app has never run on a device.
 
-## 1. Register the identifiers
+## 1. Register the identifiers — ALREADY DONE
+
+Verified, not assumed: a Release archive's signed entitlements carry
+`application-groups`, `icloud-container-identifiers`, `icloud-services` and
+`keychain-access-groups`. Xcode's automatic signing registered the App IDs and
+the capabilities while building to the device, so there is nothing to do in
+the portal.
+
+Re-check it any time with:
+
+```bash
+codesign -d --entitlements - <path>/Firelight.app
+```
+
+The reference below is kept for the day something needs re-creating.
 
 developer.apple.com → Certificates, Identifiers & Profiles → Identifiers.
 
@@ -127,8 +141,7 @@ prompt will not appear. Firelight uses HTTPS and the system Keychain only.
 
 ## 6. Version
 
-`project.yml` says `MARKETING_VERSION: "0.1.0"`. That is fine for TestFlight.
-Set it to `1.0.0` before submitting to the App Store, then regenerate:
+Set to `1.0.0`. After changing it, regenerate:
 
 ```bash
 FIRELIGHT_TEAM_ID=<your team id> scripts/build.sh generate
@@ -197,14 +210,14 @@ shelves and placeholder tiles read as an unfinished app.
 
 ## Before submitting
 
-- [ ] Three App IDs registered with the right capabilities
-- [ ] App Group assigned to all three
-- [ ] iCloud container assigned to the app
+- [x] App IDs registered with the right capabilities (verified in the archive)
+- [x] App Group assigned
+- [x] iCloud container assigned
 - [ ] App record created
 - [ ] Four consumables created and Ready to Submit
 - [x] Privacy policy written, hosted and verified — URL still to be entered in App Store Connect
 - [ ] Privacy label set to Data Not Collected
-- [ ] Version bumped to 1.0.0
+- [x] Version bumped to 1.0.0
 - [ ] Build uploaded and processed
 - [x] Demo library bundled — no demo server needed
 - [ ] Screenshots for every required size
