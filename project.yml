@@ -196,6 +196,10 @@ schemes:
       parallelizeBuild: true
     run:
       config: Debug
+      # Without this the tip jar asks StoreKit for four products that only
+      # exist in App Store Connect, gets none back, and shows its empty state
+      # on every run. The file is the local stand-in.
+      storeKitConfiguration: App/Firelight.storekit
     test:
       config: Debug
       gatherCoverageData: true
@@ -211,8 +215,12 @@ schemes:
         Firelight: all
     run:
       config: Debug
+      storeKitConfiguration: App/Firelight.storekit
     test:
       config: Debug
+      # The tip jar is one of the screens photographed, and it has nothing to
+      # show without the local products.
+      storeKitConfiguration: App/Firelight.storekit
       targets:
         - FirelightScreenshots
 

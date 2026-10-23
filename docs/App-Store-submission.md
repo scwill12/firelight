@@ -102,6 +102,8 @@ Monetization → In-App Purchases → + , type **Consumable** for each.
 | `com.colewilliams.firelight.tip.dinner` | Tip — Dinner | Dinner |
 
 Each needs a price tier, a description, and a 1024×1024 review screenshot.
+**`docs/App-Store-tip-products.md` has all of it paste-ready**, taken from
+`App/Firelight.storekit` so the app and the store cannot disagree.
 
 Two things that get this rejected:
 

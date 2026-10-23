@@ -49,6 +49,16 @@ final class AppStoreScreenshots: XCTestCase {
         app.launch()
     }
 
+    override func tearDownWithError() throws {
+        // This run drives the app into playback to photograph the player, and
+        // a simulator left playing keeps playing through the host's speakers
+        // long after the test has finished. Stop it, always, including when
+        // the test threw part-way.
+        silence()
+        app?.terminate()
+        app = nil
+    }
+
     func testCaptureStoreScreenshots() throws {
         try openDemoLibrary()
 
@@ -69,6 +79,12 @@ final class AppStoreScreenshots: XCTestCase {
 
         try openChapters()
         capture("chapters")
+
+        // App Store Connect asks for a review screenshot per in-app purchase.
+        // One shot of the tip jar serves all four, and showing them in the
+        // app is what the reviewer is actually checking.
+        try openTipJar()
+        capture("tip-jar")
 
         XCTAssertGreaterThanOrEqual(taken, 3, "Too few screens were reached to make a listing.")
     }
@@ -102,13 +118,21 @@ final class AppStoreScreenshots: XCTestCase {
         Thread.sleep(forTimeInterval: 2)
     }
 
+    /// Starts playback, then stops it immediately.
+    ///
+    /// The player screen needs a loaded book to photograph, not a *sounding*
+    /// one. Leaving it playing meant a screenshot run filled the room with
+    /// narration for the best part of a minute — and killing the run part-way
+    /// skipped the teardown that would have stopped it. Pausing within the
+    /// first second makes that impossible rather than merely tidy.
     private func startPlaying() throws {
         let play = app.buttons["Play"]
         guard play.waitForExistence(timeout: 10) else {
             throw XCTSkip("No Play button on the detail screen.")
         }
         play.tap()
-        Thread.sleep(forTimeInterval: 3)
+        silence()
+        Thread.sleep(forTimeInterval: 2)
 
         // The mini player expands into the full one.
         let mini = app.buttons.matching(
@@ -125,6 +149,56 @@ final class AppStoreScreenshots: XCTestCase {
         }
         chapters.tap()
         Thread.sleep(forTimeInterval: 2)
+    }
+
+    /// Settings → the tip jar. Needs the StoreKit configuration wired into
+    /// the scheme, or the products never load and the screen shows its empty
+    /// state instead of four tips.
+    private func openTipJar() throws {
+        // Out of the player first, if it is covering everything.
+        if app.buttons["Close the player"].exists {
+            app.buttons["Close the player"].tap()
+            Thread.sleep(forTimeInterval: 1)
+        }
+        app.swipeDown()
+        Thread.sleep(forTimeInterval: 1)
+
+        let settings = app.buttons["Settings"].firstMatch
+        guard settings.waitForExistence(timeout: 5) else {
+            throw XCTSkip("No Settings button to open.")
+        }
+        settings.tap()
+        Thread.sleep(forTimeInterval: 1)
+
+        // The row is labelled "Support Firelight", not "Tip jar" — matching on
+        // the feature's name rather than the button's is how the first
+        // attempt at this missed it.
+        // A SwiftUI List renders lazily, so a row far down the settings
+        // screen does not exist in the accessibility tree until it has been
+        // scrolled near. Waiting for it never succeeds; scrolling to it does.
+        let tipJar = app.buttons["Support Firelight"].firstMatch
+        var scrolls = 0
+        while !tipJar.exists, scrolls < 8 {
+            app.swipeUp()
+            scrolls += 1
+        }
+        guard tipJar.exists else {
+            throw XCTSkip("Never reached the Support Firelight row.")
+        }
+        tipJar.tap()
+        // StoreKit needs a moment to hand back the local products.
+        Thread.sleep(forTimeInterval: 4)
+    }
+
+    /// Pauses whatever is playing. Called the moment playback starts, and
+    /// again from `tearDown`, because this runs on someone's actual speakers.
+    private func silence() {
+        for _ in 0..<3 {
+            let pause = app.buttons["Pause"].firstMatch
+            guard pause.exists else { break }
+            pause.tap()
+            Thread.sleep(forTimeInterval: 0.3)
+        }
     }
 
     // MARK: - Capture
