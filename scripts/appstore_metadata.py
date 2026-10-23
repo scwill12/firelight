@@ -27,15 +27,34 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import mimetypes
 import os
 import pathlib
-import sys
+import ssl
 import time
 import urllib.error
 import urllib.request
 
 import jwt
+
+
+def ssl_context() -> ssl.SSLContext:
+    """A context with a CA bundle that actually exists.
+
+    A python.org framework build ships no CA certificates until someone runs
+    `Install Certificates.command`, so every HTTPS call fails with
+    CERTIFICATE_VERIFY_FAILED even though the host is perfectly reachable.
+    `certifi` carries the bundle; fall back to the system defaults where it
+    is not installed.
+    """
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
+CONTEXT = ssl_context()
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 API = "https://api.appstoreconnect.apple.com/v1"
@@ -156,7 +175,7 @@ def call(method: str, path: str, body: dict | None = None, raw: bytes | None = N
         request.add_header(name, value)
 
     try:
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request, context=CONTEXT) as response:
             payload = response.read()
             return json.loads(payload) if payload else {}
     except urllib.error.HTTPError as error:
@@ -176,15 +195,21 @@ def app_id() -> str:
     return app["id"]
 
 
-def version_id(app: str) -> str:
-    versions = call(
-        "GET", f"/apps/{app}/appStoreVersions?filter[versionString]={VERSION}"
-    )["data"]
-    if not versions:
+def version_id(app: str) -> tuple[str, bool]:
+    """The version's id, and whether it is the app's first."""
+    everything = call("GET", f"/apps/{app}/appStoreVersions")["data"]
+    matching = [
+        v for v in everything if v["attributes"]["versionString"] == VERSION
+    ]
+    if not matching:
         raise SystemExit(f"No version {VERSION}. Create it in App Store Connect first.")
-    version = versions[0]
-    print(f"version: {VERSION} ({version['attributes']['appStoreState']})")
-    return version["id"]
+    version = matching[0]
+    first = len(everything) == 1
+    print(
+        f"version: {VERSION} ({version['attributes']['appStoreState']})"
+        + ("  — first release" if first else "")
+    )
+    return version["id"], first
 
 
 def localization_id(version: str) -> str:
@@ -205,17 +230,29 @@ def info_localization_id(app: str) -> str:
 # -------------------------------------------------------------------- writing
 
 
-def set_text(version_localization: str, info_localization: str, apply: bool) -> None:
+def set_text(
+    version_localization: str, info_localization: str, is_first_release: bool, apply: bool
+) -> None:
+    # The split is not obvious and App Store Connect rejects a guess outright:
+    # `subtitle` belongs to the app *info* alongside the name and the privacy
+    # policy, while `supportUrl` belongs to the *version* alongside the
+    # description. Mixing them up returns ENTITY_ERROR.ATTRIBUTE.UNKNOWN and
+    # writes nothing, which is at least a safe way to be wrong.
     version_fields = {
-        "subtitle": SUBTITLE,
         "promotionalText": PROMOTIONAL_TEXT,
         "description": DESCRIPTION,
         "keywords": KEYWORDS,
-        "whatsNew": WHATS_NEW,
-    }
-    info_fields = {
-        "privacyPolicyUrl": PRIVACY_POLICY_URL,
         "supportUrl": SUPPORT_URL,
+    }
+    # "What's New" describes what changed since the last version, so App
+    # Store Connect refuses it on a first release — STATE_ERROR, "cannot be
+    # edited at this time". Only send it once there is something to be new
+    # against.
+    if not is_first_release:
+        version_fields["whatsNew"] = WHATS_NEW
+    info_fields = {
+        "subtitle": SUBTITLE,
+        "privacyPolicyUrl": PRIVACY_POLICY_URL,
     }
 
     for name, value in {**version_fields, **info_fields}.items():
@@ -321,12 +358,12 @@ def main() -> None:
     args = parser.parse_args()
 
     app = app_id()
-    version = version_id(app)
+    version, first_release = version_id(app)
     version_localization = localization_id(version)
     info_localization = info_localization_id(app)
 
     print()
-    set_text(version_localization, info_localization, args.apply)
+    set_text(version_localization, info_localization, first_release, args.apply)
     if args.screenshots:
         upload_screenshots(version_localization, args.apply)
 
