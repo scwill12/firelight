@@ -30,16 +30,25 @@ public struct ServerAddressResolver: Sendable {
 
     /// The production prober: `GET /ping` with a short timeout and the
     /// server's own custom headers attached.
+    /// - Parameter extraProtocolClasses: `URLProtocol`s this prober must
+    ///   honour. The session here is its own — ephemeral, with its own
+    ///   timeouts — so anything registered on the app's session is invisible
+    ///   to it unless it is passed in. The demo library is served by one, and
+    ///   without this its host never resolves: the app falls back to its
+    ///   cache, which looks like a library with no covers.
     public static func live(
         customHeaders: CustomHeaderProviding = StaticCustomHeaders(),
         timeout: TimeInterval = 3,
-        sessionDelegate: URLSessionDelegate? = nil
+        sessionDelegate: URLSessionDelegate? = nil,
+        extraProtocolClasses: [AnyClass] = []
     ) -> ServerAddressResolver {
         ServerAddressResolver { url in
             let configuration = URLSessionConfiguration.ephemeral
             configuration.timeoutIntervalForRequest = timeout
             configuration.timeoutIntervalForResource = timeout
             configuration.waitsForConnectivity = false
+            configuration.protocolClasses =
+                extraProtocolClasses + (configuration.protocolClasses ?? [])
             let session = URLSession(
                 configuration: configuration,
                 delegate: sessionDelegate,

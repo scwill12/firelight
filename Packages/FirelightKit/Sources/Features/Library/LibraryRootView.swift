@@ -35,18 +35,27 @@ struct LibraryRootView: View {
 /// an overlay with manual padding — visually close, and the deployment floor
 /// is 18.
 struct MiniPlayerAccessory: ViewModifier {
+    @Environment(AppEnvironment.self) private var environment
     let namespace: Namespace.ID
     let onTap: () -> Void
 
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.tabViewBottomAccessory {
-                MiniPlayer(namespace: namespace, onTap: onTap)
-            }
-        } else {
-            content.safeAreaInset(edge: .bottom) {
-                MiniPlayer(namespace: namespace, onTap: onTap)
-                    .padding(.bottom, Spacing.xs)
+        Group {
+            // Attached only when there is something to show. Both the
+            // accessory and the inset draw their own glass container, so
+            // installing one around an empty mini player left a blank bar
+            // hanging above the tab bar with nothing in it.
+            if environment.player.itemID == nil {
+                content
+            } else if #available(iOS 26.0, *) {
+                content.tabViewBottomAccessory {
+                    MiniPlayer(namespace: namespace, onTap: onTap)
+                }
+            } else {
+                content.safeAreaInset(edge: .bottom) {
+                    MiniPlayer(namespace: namespace, onTap: onTap)
+                        .padding(.bottom, Spacing.xs)
+                }
             }
         }
     }

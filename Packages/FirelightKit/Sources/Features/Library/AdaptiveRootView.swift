@@ -65,8 +65,12 @@ struct AdaptiveRootView: View {
             }
             .navigationTitle(Text(L("Firelight")))
             .safeAreaInset(edge: .bottom) {
-                MiniPlayer(namespace: playerNamespace) { isShowingPlayer = true }
-                    .padding(.bottom, Spacing.s)
+                // Same reason as `MiniPlayerAccessory`: an inset around an
+                // empty mini player is still an inset.
+                if environment.player.itemID != nil {
+                    MiniPlayer(namespace: playerNamespace) { isShowingPlayer = true }
+                        .padding(.bottom, Spacing.s)
+                }
             }
         } detail: {
             detail

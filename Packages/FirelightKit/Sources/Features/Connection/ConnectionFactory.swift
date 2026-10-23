@@ -60,7 +60,12 @@ final class ConnectionFactory {
     }
 
     func resolver(headers: CustomHeaderProviding) -> ServerAddressResolver {
-        ServerAddressResolver.live(customHeaders: headers, timeout: 3, sessionDelegate: pinningDelegate)
+        ServerAddressResolver.live(
+            customHeaders: headers,
+            timeout: 3,
+            sessionDelegate: pinningDelegate,
+            extraProtocolClasses: [DemoURLProtocol.self]
+        )
     }
 
     /// A client that signs its requests and renews its own token.
@@ -96,7 +101,8 @@ final class ConnectionFactory {
         return ServerAddressResolver.live(
             customHeaders: headers,
             timeout: 3,
-            sessionDelegate: pinningDelegate
+            sessionDelegate: pinningDelegate,
+            extraProtocolClasses: [DemoURLProtocol.self]
         )
     }
 }
