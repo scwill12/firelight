@@ -607,3 +607,16 @@ struct LiveActivityPreferenceTests {
         #expect(PlaybackSettingsStore(defaults: defaults).liveActivityPreference == .off)
     }
 }
+
+@Suite("Silent launch")
+struct SilentLaunchTests {
+    /// The flag exists so an automated run cannot make noise on someone's
+    /// machine. In the unit tests the app is launched without it, so the
+    /// guard must be inert — a test suite that silently disabled audio would
+    /// hide a real regression.
+    @Test("Audio is not silenced unless the flag was passed")
+    func offByDefault() {
+        #expect(!ProcessInfo.processInfo.arguments.contains("-FirelightSilent"))
+        #expect(!AudioEngine.isSilenced)
+    }
+}

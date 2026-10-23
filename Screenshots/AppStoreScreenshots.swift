@@ -46,6 +46,10 @@ final class AppStoreScreenshots: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
         app = XCUIApplication()
+        // The run has to load a book to photograph the player, and the
+        // simulator plays through the host's speakers. There is no simctl
+        // mute, so the app is asked to make no sound at all.
+        app.launchArguments = ["-FirelightSilent"]
         app.launch()
     }
 

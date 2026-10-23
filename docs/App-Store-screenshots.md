@@ -38,15 +38,19 @@ checked by dumping the environment and finding nothing — and a bare
 `NAME=value` on the command line is a *build setting*, not an environment
 variable. `SCREENSHOT_DIR` still overrides it if it ever arrives.
 
-## It makes noise — briefly, by design
+## It makes no noise
 
 The run drives the app into playback so the player screen has a loaded book
-to photograph. Playback is paused within a second of starting, and paused
-again in `tearDown`. Both are deliberate: an earlier version left it playing
-for the length of the run, through the speakers of whoever was sitting there,
-and killing the run part-way skipped the teardown that would have stopped it.
+to photograph, and launches it with `-FirelightSilent`, which makes
+`AudioEngine` set the volume to zero before `play()` starts anything.
 
-If you ever need to stop one in a hurry:
+That flag is the fix, not the pausing around it. There is no `simctl` mute
+and no simulator audio preference — the Simulator uses the host's default
+output device — and an earlier version that merely paused afterwards still
+filled the room twice, because killing a run part-way skips every cleanup
+path. Silence has to be the starting state.
+
+If you ever need to stop a run in a hurry:
 
 ```bash
 xcrun simctl shutdown all

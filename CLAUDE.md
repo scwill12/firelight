@@ -441,6 +441,20 @@ editing the script and re-running it; no Swift changes.
 the store screenshots photograph it rather than a real server, because
 publishers' cover art has no business in App Store marketing material.
 
+## Automated runs must not make noise
+
+The screenshot run drives the app into playback so the player screen has a
+book to photograph, and the Simulator plays through the speakers of whoever
+is sitting at the Mac. There is **no `simctl` mute and no simulator audio
+preference** — the Simulator uses the host's default output device — so the
+app has to honour it itself.
+
+Launching with `-FirelightSilent` makes `AudioEngine` set the volume to zero
+*before* `play()` starts anything. Pausing afterwards is not equivalent:
+killing a run part-way skips every cleanup path, which is how two screenshot
+runs ended up playing an audiobook into a room. Anything that drives playback
+unattended passes the flag.
+
 ## Rules that are not negotiable
 
 1. One phase at a time. Stop at its checkpoint and print the device test list.

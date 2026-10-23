@@ -150,6 +150,7 @@ public final class AudioEngine {
     public func play() {
         guard !timeline.isEmpty else { return }
         configureAudioSession()
+        if Self.isSilenced { player.volume = 0 }
         player.play()
         state = .playing
     }
@@ -198,8 +199,22 @@ public final class AudioEngine {
 
     /// 0...1, used by the sleep timer's fade.
     public func setVolume(_ volume: Double) {
+        guard !Self.isSilenced else { return }
         player.volume = Float(min(max(volume, 0), 1))
     }
+
+    /// True when the process was launched to make no sound.
+    ///
+    /// The screenshot run drives the app into playback so the player screen
+    /// has a loaded book to photograph, and the simulator plays through the
+    /// speakers of whoever is sitting at the Mac. There is no `simctl` mute
+    /// and no simulator audio preference, so the app has to honour it — and
+    /// honouring it here, rather than pausing afterwards, means killing the
+    /// run part-way cannot leave sound behind.
+    ///
+    /// Launch with `-FirelightSilent` to use it. It affects nothing else.
+    nonisolated static let isSilenced =
+        ProcessInfo.processInfo.arguments.contains("-FirelightSilent")
 
     public func stop() {
         player.pause()
