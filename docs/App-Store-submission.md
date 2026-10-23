@@ -7,9 +7,10 @@ is a provisioning failure half an hour later with an unhelpful message.
 ## Bottom line
 
 - Three bundle IDs to register, not one. The watch app is not shipping.
-- **One hard blocker left**: App Review cannot use the app at all without
-  either a reachable demo server or a built-in sample library. The privacy
-  policy is written (`PRIVACY.md`, `docs/privacy.html`).
+- **Both hard blockers are cleared.** The privacy policy is written
+  (`PRIVACY.md`, `docs/privacy.html`), and a reviewer can use the whole app
+  with no server at all: "Look around first" on the opening screen loads a
+  bundled sample library.
 - The four tip products must be created *and attached to the first build*,
   or the tip jar is dead on arrival.
 - Go to TestFlight first. Most of the app has never run on a device.
@@ -175,11 +176,13 @@ contains audiobooks, a podcast and ebooks so every feature can be
 exercised.
 ```
 
-The demo server must be reachable from Apple's network — a LAN address will
-not work. Options, roughly in order of effort: a Tailscale Funnel or Cloudflare
-Tunnel pointed at the existing server, a small VPS running Audiobookshelf with
-a handful of public-domain titles, or the project's own demo instance if one
-is stood up. Put only public-domain or self-made content on it.
+No demo server is required. The sample library is bundled in the app, so it
+cannot be offline when the reviewer happens to open it — which matters,
+because you do not control when that is.
+
+Its content is `Alice's Adventures in Wonderland` (public domain, 1865), read
+by a synthesised voice, with covers drawn at build time. Nothing in it belongs
+to anyone else. `scripts/make_demo_library.py` regenerates all of it.
 
 ## 9. Screenshots
 
@@ -203,7 +206,7 @@ shelves and placeholder tiles read as an unfinished app.
 - [ ] Privacy label set to Data Not Collected
 - [ ] Version bumped to 1.0.0
 - [ ] Build uploaded and processed
-- [ ] Demo server live, reachable from outside the LAN, credentials in notes
+- [x] Demo library bundled — no demo server needed
 - [ ] Screenshots for every required size
 - [ ] TestFlight build used on a real device for more than a few minutes
 

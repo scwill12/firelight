@@ -21,6 +21,7 @@ let package = Package(
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "Features", targets: ["Features"]),
         .library(name: "ABSMockServer", targets: ["ABSMockServer"]),
+        .library(name: "DemoKit", targets: ["DemoKit"]),
     ],
     // Approved in SPEC.md: Nuke is MIT. Added in Phase 2, when covers first
     // need loading and caching.
@@ -78,13 +79,16 @@ let package = Package(
             name: "Features",
             dependencies: [
                 "ABSKit", "Persistence", "SyncEngine", "PlaybackKit",
-                "ReaderKit", "ConversionKit", "DownloadKit", "DesignSystem",
+                "ReaderKit", "ConversionKit", "DownloadKit", "DesignSystem", "DemoKit",
             ],
             resources: [.process("Resources")]
         ),
         // Test support: a URLProtocol-backed stand-in for a real ABS server, so
         // tests exercise the production HTTP stack rather than a fake client.
         .target(name: "ABSMockServer", dependencies: ["ABSKit"], resources: [.process("Fixtures")]),
+        // `.process`, never `.copy`: a copied folder called Resources
+        // collides with the bundle's own layout and codesign rejects it.
+        .target(name: "DemoKit", dependencies: ["ABSKit"], resources: [.process("Resources")]),
     ],
     swiftLanguageModes: [.v6]
 )

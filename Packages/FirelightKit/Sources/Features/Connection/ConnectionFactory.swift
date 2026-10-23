@@ -1,4 +1,5 @@
 import ABSKit
+import DemoKit
 import Foundation
 
 /// Builds the clients that talk to a server, with the right headers, the right
@@ -24,6 +25,11 @@ final class ConnectionFactory {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 20
         configuration.waitsForConnectivity = false
+        // Claims `demo.firelight.invalid` and nothing else, so the demo
+        // library is served by the same client, decoders and screens as a real
+        // server. Every other host goes over the network untouched.
+        configuration.protocolClasses =
+            [DemoURLProtocol.self] + (configuration.protocolClasses ?? [])
         self.session = URLSession(configuration: configuration, delegate: pinningDelegate, delegateQueue: nil)
     }
 

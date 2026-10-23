@@ -23,6 +23,7 @@ public struct OnboardingView: View {
     @State private var check: ConnectionCheckResult?
     @State private var checkTask: Task<Void, Never>?
     @State private var isSigningIn = false
+    @State private var isStartingDemo = false
     @State private var errorMessage: String?
 
     /// Set when this is the first server; the sheet can't be dismissed then.
@@ -39,6 +40,7 @@ public struct OnboardingView: View {
                 if check?.isReachable == true {
                     signInSection
                 }
+                if isFirstServer { demoSection }
                 advancedSection
             }
             .navigationTitle(isFirstServer ? Text(L("Add your server")) : Text(L("Add a server")))
@@ -211,6 +213,31 @@ public struct OnboardingView: View {
         }
     }
 
+    // MARK: - Demo
+
+    /// A client for a self-hosted server is impossible to evaluate without
+    /// the server. This is the way in for someone who has not set one up —
+    /// and for an App Store reviewer, who never will.
+    private var demoSection: some View {
+        Section {
+            Button {
+                Task { await startDemo() }
+            } label: {
+                if isStartingDemo {
+                    HStack(spacing: Spacing.s) {
+                        ProgressView()
+                        Text(L("Opening…"))
+                    }
+                } else {
+                    Label(L("Look around first"), systemImage: "binoculars")
+                }
+            }
+            .disabled(isStartingDemo || isSigningIn)
+        } footer: {
+            Text(L("Opens a small sample library so you can see how Firelight works. Nothing is downloaded and no server is contacted. You can add your own server afterwards."))
+        }
+    }
+
     // MARK: - Advanced
 
     private var advancedSection: some View {
@@ -263,6 +290,18 @@ public struct OnboardingView: View {
             let result = await ConnectionChecker(factory: environment.session.factory)
                 .check(urlText: text, headers: draftHeaders)
             if !Task.isCancelled { check = result }
+        }
+    }
+
+    private func startDemo() async {
+        isStartingDemo = true
+        defer { isStartingDemo = false }
+        do {
+            _ = try await environment.session.startDemo()
+            dismiss()
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription
+                ?? "The sample library couldn't be opened."
         }
     }
 

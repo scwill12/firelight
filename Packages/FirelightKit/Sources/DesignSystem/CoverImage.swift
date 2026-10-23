@@ -37,6 +37,12 @@ public struct CoverConfiguration: Sendable, Equatable {
 @MainActor
 @Observable
 public final class CoverImageProvider {
+    /// `URLProtocol`s that cover loading must honour as well as the API client.
+    ///
+    /// Set once at launch. `DesignSystem` cannot see `DemoKit`, and should
+    /// not — it is the layer that knows about drawing, not about servers.
+    nonisolated(unsafe) public static var extraProtocolClasses: [AnyClass] = []
+
     /// Supplies a bearer token, or nil when nothing is signed in. Main-actor
     /// isolated because the session it reads is, and `@Sendable` because the
     /// image pipeline calls it from its own loading queue.
@@ -97,7 +103,16 @@ public final class CoverImageProvider {
 private final class CoverDataLoader: DataLoading {
     private let accessToken: CoverImageProvider.TokenProvider?
     private let refreshAccessToken: CoverImageProvider.TokenProvider?
-    private let inner = DataLoader()
+    /// Built from a configuration rather than taken as-is: covers do not go
+    /// through the app's `URLSession`, so any protocol the app registered —
+    /// the demo library's, in particular — has to be registered here too or
+    /// a demo shelf draws placeholders.
+    private let inner: DataLoader = {
+        let configuration = DataLoader.defaultConfiguration
+        configuration.protocolClasses =
+            CoverImageProvider.extraProtocolClasses + (configuration.protocolClasses ?? [])
+        return DataLoader(configuration: configuration)
+    }()
 
     init(
         accessToken: CoverImageProvider.TokenProvider?,

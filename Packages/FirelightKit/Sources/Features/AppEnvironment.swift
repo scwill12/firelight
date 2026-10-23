@@ -1,4 +1,5 @@
 import ABSKit
+import DemoKit
 import DesignSystem
 import Nuke
 import Observation
@@ -56,6 +57,11 @@ public final class AppEnvironment {
         keychain: KeychainStore,
         device: DeviceIdentity
     ) {
+        // Before the cover provider is built: its loader reads this when it
+        // is constructed, so setting it afterwards is too late and a demo
+        // shelf draws placeholders.
+        CoverImageProvider.extraProtocolClasses = [DemoURLProtocol.self]
+
         self.persistence = persistence
         self.persistenceFailureDetail = persistenceFailureDetail
         self.keychain = keychain
@@ -122,6 +128,14 @@ public final class AppEnvironment {
         session.onActiveConnectionChange = { [weak self] in
             await self?.refreshCoverCredentials()
         }
+        // A new account has a different library behind it, and nothing else
+        // asks for it: `start()` only runs at launch, so without this a first
+        // sign-in showed an empty shelf until the user pulled to refresh.
+        session.onActiveAccountChange = { [weak self] in
+            guard let self else { return }
+            await library.refresh()
+            await downloads.reload()
+        }
     }
 
     /// Positions go to the journal before they go anywhere else, and a
@@ -155,7 +169,16 @@ public final class AppEnvironment {
         let downloads = self.downloads
         let sync = self.sync
         player.localTracksProvider = { itemID, episodeID in
-            await downloads.localTracks(forItemID: itemID, episodeID: episodeID)
+            // A demo book is presented as already downloaded: AVPlayer does
+            // not load through URLProtocol, so the bundle is how its audio
+            // reaches the player. Real items fall straight through.
+            let demo = DemoMode.localTracks(forItemID: itemID)
+            if !demo.isEmpty {
+                return demo.map {
+                    AudioEngine.ResolvedTrack(url: $0.url, offset: $0.offset, duration: $0.duration)
+                }
+            }
+            return await downloads.localTracks(forItemID: itemID, episodeID: episodeID)
         }
         player.offlinePositionProvider = { itemID in
             await sync.latestPosition(itemID: itemID)?.currentTime

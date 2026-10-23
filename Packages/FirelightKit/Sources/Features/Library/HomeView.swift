@@ -74,6 +74,11 @@ struct HomeView: View {
     private var shelfScroll: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: Spacing.xl) {
+                if environment.session.isShowingDemo {
+                    DemoBanner { isShowingSettings = true }
+                        .padding(.horizontal, Spacing.l)
+                }
+
                 if let error = library.refreshError {
                     RefreshBanner(message: error) { Task { await library.refresh() } }
                         .padding(.horizontal, Spacing.l)
@@ -159,6 +164,42 @@ struct ContinueHero: View {
         .accessibilityLabel(L("Continue: \(item.title)"))
         .accessibilityValue(L("\(Format.spokenDuration(item.remainingTime)) left"))
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// Says, quietly and permanently, that this is not your library.
+///
+/// A sample library that looked like the real thing would be worse than no
+/// sample at all: someone would add books to a server they never connected
+/// and wonder where they went.
+struct DemoBanner: View {
+    let onConnect: () -> Void
+
+    var body: some View {
+        HStack(spacing: Spacing.m) {
+            Image(systemName: "binoculars.fill")
+                .foregroundStyle(Palette.accent)
+
+            VStack(alignment: .leading, spacing: Spacing.hair) {
+                Text(L("Sample library"))
+                    .font(Typography.emphasisedBody)
+                    .foregroundStyle(Palette.primaryText)
+                Text(L("A few public-domain excerpts, so you can try Firelight out."))
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.secondaryText)
+            }
+
+            Spacer(minLength: 0)
+
+            Button(L("Connect"), action: onConnect)
+                .font(Typography.caption.weight(.semibold))
+                .buttonStyle(.bordered)
+                .tint(Palette.accent)
+        }
+        .padding(Spacing.m)
+        .firelightGlass(in: RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(L("Opens settings, where you can add your own server."))
     }
 }
 

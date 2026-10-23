@@ -402,6 +402,35 @@ Editions live in `ReadingEditionStore`, which is defaults-backed. Its comment
 says why, and that reason is a constraint on the whole schema — read it before
 adding a `@Model` for anything small.
 
+## The demo library
+
+`DemoKit` is how Firelight shows itself without a server — on the opening
+screen, and to an App Store reviewer who will never have one. It is **not** a
+mock in the testing sense: `DemoURLProtocol` claims `demo.firelight.invalid`
+in the app's own `URLSession`, so the ordinary client, decoders and screens
+run against it unchanged.
+
+Two things it cannot reach, both handled:
+
+- **`AVPlayer` does not load through `URLProtocol`.** A demo book is handed to
+  the player as *already downloaded*, through `DemoMode.localTracks`, which is
+  the app's ordinary offline path rather than a special case.
+- **Covers load through Nuke's own session.** `CoverImageProvider.extraProtocolClasses`
+  must be set *before* the provider is constructed — its loader reads the
+  value once — or a demo shelf draws placeholders.
+
+The demo server is recognised by its **address**, never an id: it is added
+through the real `addServer`, which mints its own.
+
+The payloads in `DemoCatalogue` are hand-written, so `DemoLibraryTests`
+decodes every one with the app's real decoder. If a model changes shape that
+test fails, instead of the sample library quietly emptying itself in front of
+a reviewer.
+
+`scripts/make_demo_library.py` regenerates the bundled content: public-domain
+text, a synthesised voice, covers drawn from nothing. Nothing in it belongs to
+anyone else, and that is a licensing requirement, not a preference.
+
 ## Rules that are not negotiable
 
 1. One phase at a time. Stop at its checkpoint and print the device test list.

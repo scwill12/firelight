@@ -1,4 +1,5 @@
 import ABSKit
+import DemoKit
 import Foundation
 import Observation
 import Persistence
@@ -28,6 +29,13 @@ public final class SessionController {
     /// them that a base URL now exists; before this hook, a server added after
     /// launch showed placeholders until the app was relaunched.
     @ObservationIgnored public var onActiveConnectionChange: (@MainActor () async -> Void)?
+
+    /// Called when the *account* changes — a fresh sign-in, or a switch to a
+    /// different one. Distinct from `onActiveConnectionChange`, which also
+    /// fires on every reconnect: this one means "there is a different library
+    /// behind this now", and fetching it is what stops a first sign-in
+    /// landing on an empty shelf.
+    @ObservationIgnored public var onActiveAccountChange: (@MainActor () async -> Void)?
 
     @ObservationIgnored let factory: ConnectionFactory
     @ObservationIgnored private let store: ServerStore?
@@ -182,6 +190,35 @@ public final class SessionController {
         }
     }
 
+    /// Adds the built-in demo library and signs into it.
+    ///
+    /// Deliberately the *same* path as a real server: it adds a server,
+    /// verifies its status and logs in. Nothing downstream knows the
+    /// difference, which is the point — what a reviewer sees is the app, not
+    /// a demonstration of the app.
+    public func startDemo() async throws -> UserSummary {
+        // Recognised by address, not by id: `addServer` mints its own id, so
+        // there is no fixed one to match against.
+        let demoServerIDs = Set(servers.filter { DemoMode.isDemo(url: $0.remoteURL) }.map(\.id))
+        if let existing = users.first(where: { demoServerIDs.contains($0.serverID) }) {
+            await switchTo(user: existing)
+            return existing
+        }
+        return try await addServer(
+            displayName: DemoMode.serverName,
+            remoteURLText: DemoMode.baseURL.absoluteString,
+            localURLText: nil,
+            username: DemoMode.username,
+            password: DemoMode.password
+        )
+    }
+
+    /// True when the app is currently showing the demo library.
+    public var isShowingDemo: Bool {
+        guard let activeServer else { return false }
+        return DemoMode.isDemo(url: activeServer.remoteURL)
+    }
+
     /// Signs an additional account into a server that is already configured.
     public func addAccount(serverID: UUID, username: String, password: String) async throws -> UserSummary {
         guard let store, let server = try await store.server(id: serverID) else {
@@ -205,6 +242,7 @@ public final class SessionController {
         try? await store.setActive(compositeID: user.id)
         await load()
         await connect()
+        await onActiveAccountChange?()
     }
 
     public func signOut(user: UserSummary) async {
@@ -291,6 +329,7 @@ public final class SessionController {
         resolvedURLs[serverID] = baseURL
         await load()
         await connect()
+        await onActiveAccountChange?()
         return summary
     }
 
