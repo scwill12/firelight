@@ -96,6 +96,13 @@ settings or dependencies means editing `project.yml`.
   generated string symbols and fail the build. Keep keys distinct.
 - Swift 6 will not let a `@Sendable` closure mutate a captured `var`. Test
   spies that record calls need an actor, not a local variable.
+- **`xcodebuild -only-testing:` against a Swift Testing `@Test` can match
+  nothing, run nothing, and still exit 0.** The log reads `Test Suite
+  'Selected tests' passed` with the start and end timestamps in the same
+  millisecond, and further down, `Executed 0 tests`. Since every test here is
+  Swift Testing rather than XCTest, a filtered run that "passes" proves
+  nothing on its own. Grep the log for `Executed 0 tests` before believing a
+  green filtered run.
 - **A closure handed to an Apple framework must be created somewhere
   non-isolated.** A closure written inside a `@MainActor` method *inherits*
   that isolation, Swift emits a runtime executor check, and the check traps
@@ -466,9 +473,11 @@ Ruled out, so nobody repeats them:
 
 - The file is malformed. It is not: valid JSON, correct top-level keys,
   four consumables.
-- The file is missing from the project. It is not — it is a file reference,
-  though it is wrongly a *Resource* of the app target, which means it ships
-  in the bundle and should be excluded.
+- The file is missing from the project. It is not — and it is no longer
+  wrongly a *Resource* either. `project.yml` now lists it a second time with
+  `buildPhase: none`, so it is a project member in no build phase and does
+  not ship in the bundle. That was worth doing on its own, and it did not
+  fix the tip jar.
 - The path is wrong. XcodeGen writes `../../App/Firelight.storekit`, which
   resolves inside the `.xcodeproj` and matches nothing. Correcting it to
   `../../../` made the path resolve — and changed nothing.
@@ -477,7 +486,16 @@ Ruled out, so nobody repeats them:
 
 **Do not fight this to test the tip jar.** Once the four products exist in
 App Store Connect, a sandbox or TestFlight build loads them for real. That is
-the shorter path, and it is the one the release needs anyway.
+the shorter path, and it is the one the release needs anyway. The four
+products now **do** exist in App Store Connect (`scripts/appstore_tips.py`),
+so the next TestFlight build is the first chance to see the tip jar populated
+— and that screen is also the IAP review screenshot each product still needs.
+
+One more dead end, so it is not repeated: a probe test that asks
+`Product.products(for:)` for the four ids and asserts the count cannot settle
+this from the command line, because `-only-testing:` does not match a Swift
+Testing function and the run exits 0 having executed nothing. See the
+`Executed 0 tests` gotcha above.
 
 ## Rules that are not negotiable
 

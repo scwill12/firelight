@@ -55,9 +55,16 @@ targets:
         # A StoreKit configuration is a development file. Left in the target's
         # sources it is copied into the app bundle and shipped to users, which
         # is both pointless and a description of your pricing nobody asked for.
-        # The scheme still points at it by path; it does not need to be built.
         excludes:
           - "*.storekit"
+      # It still has to be a *member* of the project, though. Xcode resolves a
+      # scheme's StoreKit configuration against the project's own file
+      # references, so a file that is only on disk is silently ignored and the
+      # tip jar asks for four products and gets none back. `buildPhase: none`
+      # is the combination that is wanted: in the project, in no build phase,
+      # and therefore not in the shipped bundle.
+      - path: App/Firelight.storekit
+        buildPhase: none
     dependencies:
       - package: FirelightKit
         product: Features
