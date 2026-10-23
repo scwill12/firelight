@@ -18,15 +18,29 @@ can be given more than once and restores nothing.
 Prices are the US tier nearest each figure; App Store Connect sets every other
 storefront from it.
 
-## Review screenshot
+## Review screenshot — take this one by hand
 
-Each product needs one, 1024 × 1024 or larger. `docs/screenshots/06-tip-jar.png`
-shows all four in the app, which is what the reviewer is checking — that the
-purchase exists where the listing says it does. The same image serves all four
-products.
+Each product needs one, 1024 × 1024 or larger, and one shot of the tip jar
+serves all four: the reviewer is checking that the purchase exists where the
+listing says it does.
 
-Crop it square before uploading; App Store Connect wants at least 1024 on the
-short edge and will not do the cropping for you.
+**The automated run cannot take it.** XcodeGen writes the StoreKit
+configuration into the scheme's *Run* action only, and `xcodebuild test` does
+not inherit it, so under the screenshot run the products never load and the
+screen reads "The App Store isn't reachable right now."
+
+Running the app normally does work, because that is the Run action:
+
+1. Open the project in Xcode and press ⌘R.
+2. Settings → Support Firelight. All four tips load from
+   `App/Firelight.storekit`, with no account and no sandbox user.
+3. Screenshot it (⌘S in the Simulator), then crop square — App Store Connect
+   wants at least 1024 on the short edge and will not crop for you.
+
+If you would rather automate it, the fix is to copy the
+`StoreKitConfigurationFileReference` element from the scheme's `LaunchAction`
+into its `TestAction`. That means post-processing generated XML, which is why
+it is not done here.
 
 ## Review notes, per product
 

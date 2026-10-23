@@ -155,43 +155,77 @@ final class AppStoreScreenshots: XCTestCase {
         Thread.sleep(forTimeInterval: 2)
     }
 
-    /// Settings → the tip jar. Needs the StoreKit configuration wired into
-    /// the scheme, or the products never load and the screen shows its empty
-    /// state instead of four tips.
+    /// Settings → the tip jar.
+    ///
+    /// Needs the StoreKit configuration wired into the scheme, or the
+    /// products never load and the screen shows its empty state instead of
+    /// four tips.
     private func openTipJar() throws {
-        // Out of the player first, if it is covering everything.
+        // Unwind properly, innermost first. The Chapters *sheet* sits over
+        // the player, the player is a full-screen cover over the book's
+        // detail screen, and Settings lives on the home screen's toolbar.
+        // Leaving the sheet up meant every later tap landed on it instead:
+        // the accessibility tree showed the player's controls and the home
+        // screen at once, and the Settings tap hit nothing.
+        if app.buttons["Done"].exists {
+            app.buttons["Done"].tap()
+            Thread.sleep(forTimeInterval: 1)
+        }
         if app.buttons["Close the player"].exists {
             app.buttons["Close the player"].tap()
             Thread.sleep(forTimeInterval: 1)
         }
-        app.swipeDown()
-        Thread.sleep(forTimeInterval: 1)
+        for _ in 0..<3 where !app.buttons["Settings"].exists {
+            let back = app.navigationBars.buttons.firstMatch
+            guard back.exists else { break }
+            back.tap()
+            Thread.sleep(forTimeInterval: 1)
+        }
 
         let settings = app.buttons["Settings"].firstMatch
         guard settings.waitForExistence(timeout: 5) else {
-            throw XCTSkip("No Settings button to open.")
+            throw XCTSkip("Never got back to a screen with Settings on it.")
         }
         settings.tap()
-        Thread.sleep(forTimeInterval: 1)
+        Thread.sleep(forTimeInterval: 2)
 
-        // The row is labelled "Support Firelight", not "Tip jar" — matching on
-        // the feature's name rather than the button's is how the first
-        // attempt at this missed it.
-        // A SwiftUI List renders lazily, so a row far down the settings
-        // screen does not exist in the accessibility tree until it has been
-        // scrolled near. Waiting for it never succeeds; scrolling to it does.
-        let tipJar = app.buttons["Support Firelight"].firstMatch
+        // A SwiftUI List renders lazily, so a row far down does not exist in
+        // the accessibility tree until it has been scrolled near. Waiting for
+        // it never succeeds; scrolling to it does. The row is a navigation
+        // link, which surfaces as a button on some iOS versions and a cell on
+        // others, so try both rather than guess.
         var scrolls = 0
-        while !tipJar.exists, scrolls < 8 {
+        while tipJarRow == nil, scrolls < 10 {
             app.swipeUp()
+            Thread.sleep(forTimeInterval: 0.4)
             scrolls += 1
         }
-        guard tipJar.exists else {
+        guard let row = tipJarRow else {
             throw XCTSkip("Never reached the Support Firelight row.")
         }
-        tipJar.tap()
-        // StoreKit needs a moment to hand back the local products.
-        Thread.sleep(forTimeInterval: 4)
+        row.tap()
+        Thread.sleep(forTimeInterval: 5)
+
+        // XcodeGen writes the StoreKit configuration into the scheme's *Run*
+        // action only, and `xcodebuild test` does not inherit it, so the
+        // products do not load here and the screen shows "The App Store isn't
+        // reachable right now." A screenshot of that is worse than none.
+        //
+        // Take this one by hand instead: run the app from Xcode (⌘R, which
+        // does use the Run action) and photograph Settings → Support
+        // Firelight. See docs/App-Store-tip-products.md.
+        guard !app.staticTexts["The App Store isn't reachable right now."].exists else {
+            throw XCTSkip("Tip products do not load under `xcodebuild test`; take this shot from a ⌘R run.")
+        }
+    }
+
+    /// The Support Firelight row, however this iOS version chooses to expose it.
+    private var tipJarRow: XCUIElement? {
+        for candidates in [app.buttons, app.cells, app.staticTexts] {
+            let match = candidates["Support Firelight"].firstMatch
+            if match.exists { return match }
+        }
+        return nil
     }
 
     /// Pauses whatever is playing. Called the moment playback starts, and
