@@ -1,0 +1,72 @@
+{
+  "identifier": "FirelightTips",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "TIP1",
+      "localizations": [
+        {
+          "description": "A small thank you.",
+          "displayName": "Coffee",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.colewilliams.firelight.tip.coffee",
+      "referenceName": "Tip \u2014 Coffee",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "2.99",
+      "familyShareable": false,
+      "internalID": "TIP2",
+      "localizations": [
+        {
+          "description": "A slightly larger thank you.",
+          "displayName": "Snack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.colewilliams.firelight.tip.snack",
+      "referenceName": "Tip \u2014 Snack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "TIP3",
+      "localizations": [
+        {
+          "description": "A generous thank you.",
+          "displayName": "Lunch",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.colewilliams.firelight.tip.lunch",
+      "referenceName": "Tip \u2014 Lunch",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "9.99",
+      "familyShareable": false,
+      "internalID": "TIP4",
+      "localizations": [
+        {
+          "description": "A very generous thank you.",
+          "displayName": "Dinner",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.colewilliams.firelight.tip.dinner",
+      "referenceName": "Tip \u2014 Dinner",
+      "type": "Consumable"
+    }
+  ],
+  "settings": {},
+  "subscriptionGroups": [],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}

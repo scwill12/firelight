@@ -1,0 +1,42 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Firelight": {
+      "comment": "Watch app navigation title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Firelight"
+          }
+        }
+      }
+    },
+    "Nothing playing": {
+      "comment": "Watch app state when nothing is in progress.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing playing"
+          }
+        }
+      }
+    },
+    "Start something on your iPhone.": {
+      "comment": "Watch app message when nothing is in progress.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start something on your iPhone."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

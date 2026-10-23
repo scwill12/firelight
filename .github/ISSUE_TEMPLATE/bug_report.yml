@@ -1,0 +1,45 @@
+name: Bug report
+description: Something is wrong
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste your server address, username or any token.
+        `Settings → Export diagnostics` gives a report with all of those removed.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a book
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: abs-version
+    attributes:
+      label: Audiobookshelf version
+      placeholder: "2.37.1"
+    validations:
+      required: true
+  - type: input
+    id: ios-version
+    attributes:
+      label: iOS version and device
+      placeholder: "iOS 26.1, iPhone 15 Pro"
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: From Settings → Export diagnostics. Optional, but it helps.
+      render: text

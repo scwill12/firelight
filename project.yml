@@ -1,0 +1,198 @@
+# Generated into Firelight.xcodeproj by XcodeGen. Edit this file, never the
+# .pbxproj — run `scripts/build.sh generate` (or `xcodegen generate`) after any
+# change. The .pbxproj is not tracked in git.
+name: Firelight
+
+options:
+  bundleIdPrefix: com.colewilliams
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+  defaultConfig: Debug
+  groupSortPosition: top
+  deploymentTarget:
+    iOS: "18.0"
+    watchOS: "11.0"
+
+packages:
+  FirelightKit:
+    path: Packages/FirelightKit
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CODE_SIGN_STYLE: Automatic
+    # Your own team, from the environment — never checked in, because this is
+    # a public repo and every contributor signs with their own. Export
+    # FIRELIGHT_TEAM_ID before `scripts/build.sh generate`, or set the team in
+    # Xcode afterwards. Without it, simulator builds still work.
+    DEVELOPMENT_TEAM: ${FIRELIGHT_TEAM_ID}
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_LANGUAGE: en
+    SWIFT_EMIT_LOC_STRINGS: YES
+    CLANG_ENABLE_MODULES: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    GCC_WARN_ABOUT_RETURN_TYPE: YES_ERROR
+    # Nothing in Firelight may depend on a user's locale for correctness.
+    LOCALIZED_STRING_SWIFTUI_SUPPORT: YES
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+      ONLY_ACTIVE_ARCH: YES
+    Release:
+      SWIFT_COMPILATION_MODE: wholemodule
+      SWIFT_OPTIMIZATION_LEVEL: "-O"
+      VALIDATE_PRODUCT: YES
+
+targets:
+  # ---------------------------------------------------------------- iOS app ---
+  Firelight:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: FirelightKit
+        product: Features
+      - package: FirelightKit
+        product: DesignSystem
+      - target: FirelightWidgets
+      - target: FirelightShare
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.colewilliams.firelight
+        PRODUCT_NAME: Firelight
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Firelight.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-Hearth AppIcon-Moonlight"
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SUPPORTS_MACCATALYST: NO
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: NO
+        INFOPLIST_KEY_UILaunchScreen_Generation: NO
+
+  # ------------------------------------------------- Widgets + Live Activity ---
+  FirelightWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+    dependencies:
+      - package: FirelightKit
+        product: DesignSystem
+      - package: FirelightKit
+        product: Persistence
+      - package: FirelightKit
+        product: PlaybackKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.colewilliams.firelight.widgets
+        PRODUCT_NAME: FirelightWidgets
+        INFOPLIST_FILE: Widgets/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Widgets/FirelightWidgets.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SKIP_INSTALL: YES
+
+  # --------------------------------------------------------- Share extension ---
+  FirelightShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Share
+    dependencies:
+      - package: FirelightKit
+        product: ABSKit
+      - package: FirelightKit
+        product: DesignSystem
+      - package: FirelightKit
+        product: Persistence
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.colewilliams.firelight.share
+        PRODUCT_NAME: FirelightShare
+        INFOPLIST_FILE: Share/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Share/FirelightShare.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SKIP_INSTALL: YES
+
+  # -------------------------------------------------------------- watchOS app ---
+  # Deliberately not embedded in the iOS app yet: the watch app ships in
+  # Phase 19, and embedding it now would force watch provisioning on every
+  # device install. See PROGRESS.md.
+  FirelightWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: Watch
+    dependencies:
+      - package: FirelightKit
+        product: PlaybackKit
+      - package: FirelightKit
+        product: DesignSystem
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.colewilliams.firelight.watchkitapp
+        PRODUCT_NAME: Firelight
+        INFOPLIST_FILE: Watch/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Watch/FirelightWatch.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SKIP_INSTALL: YES
+
+  # ------------------------------------------------------------------- Tests ---
+  FirelightTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Firelight
+      - package: FirelightKit
+        product: ABSKit
+      - package: FirelightKit
+        product: ABSMockServer
+      - package: FirelightKit
+        product: Persistence
+      - package: FirelightKit
+        product: SyncEngine
+      - package: FirelightKit
+        product: ReaderKit
+      - package: FirelightKit
+        product: DownloadKit
+      - package: FirelightKit
+        product: DesignSystem
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.colewilliams.firelight.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Firelight.app/Firelight
+        BUNDLE_LOADER: $(TEST_HOST)
+
+schemes:
+  Firelight:
+    build:
+      targets:
+        Firelight: all
+        FirelightWidgets: all
+        FirelightShare: all
+      parallelizeBuild: true
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - FirelightTests
+    archive:
+      config: Release
+  FirelightWatch:
+    build:
+      targets:
+        FirelightWatch: all
+    run:
+      config: Debug
+    archive:
+      config: Release

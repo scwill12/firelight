@@ -1,0 +1,29 @@
+# Weblate component configuration.
+#
+# Every user-facing string in Firelight lives in a String Catalog, one per
+# target, so each is its own Weblate component. English is the source and is
+# edited in Xcode, never in Weblate.
+components:
+  - name: App
+    filemask: Packages/FirelightKit/Sources/Features/Resources/*.xcstrings
+    file_format: xcstrings
+    source_language: en
+    template: Packages/FirelightKit/Sources/Features/Resources/Localizable.xcstrings
+
+  - name: Design system
+    filemask: Packages/FirelightKit/Sources/DesignSystem/Resources/*.xcstrings
+    file_format: xcstrings
+    source_language: en
+    template: Packages/FirelightKit/Sources/DesignSystem/Resources/Localizable.xcstrings
+
+  - name: Widgets
+    filemask: Widgets/*.xcstrings
+    file_format: xcstrings
+    source_language: en
+    template: Widgets/Localizable.xcstrings
+
+  - name: Share extension
+    filemask: Share/*.xcstrings
+    file_format: xcstrings
+    source_language: en
+    template: Share/Localizable.xcstrings

@@ -1,0 +1,78 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Firelight will keep working with whatever you've downloaded." : {
+      "comment" : "Explanation under the offline state. Reassurance, not an error.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Firelight will keep working with whatever you've downloaded."
+          }
+        }
+      }
+    },
+    "Loading…" : {
+      "comment" : "Shown while the first load is in flight.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading…"
+          }
+        }
+      }
+    },
+    "Nothing here yet" : {
+      "comment" : "Default empty state title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing here yet"
+          }
+        }
+      }
+    },
+    "Something went wrong" : {
+      "comment" : "Default error state title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong"
+          }
+        }
+      }
+    },
+    "Try Again" : {
+      "comment" : "Retry button on the error and offline states.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        }
+      }
+    },
+    "You're offline" : {
+      "comment" : "Offline state title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,16 @@
+# Generated from project.yml — never edit or commit it.
+Firelight.xcodeproj/
+
+.DS_Store
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+.build/
+Packages/*/.build/
+.firelight-test-sim
+
+# Machine-specific simulator UDID caches.
+.firelight-ipad-sim
+.firelight-*-sim
