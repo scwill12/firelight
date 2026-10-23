@@ -1,5 +1,24 @@
 # The four tip products
 
+**Created.** All four exist on the app record as consumables, with names,
+descriptions and US prices read straight out of `App/Firelight.storekit`, so
+the store and the app cannot disagree. Verified by reading them back from
+Apple.
+
+They sit in `MISSING_METADATA` until each has a review screenshot, which is
+the one part that has to be done by hand — see below.
+
+To re-run after editing the StoreKit file (idempotent; it leaves anything
+that already exists alone):
+
+```bash
+python3 scripts/appstore_tips.py            # dry run
+python3 scripts/appstore_tips.py --apply
+```
+
+The reference below is what was created.
+
+
 Paste-ready values for App Store Connect → Monetization → In-App Purchases.
 Every one is taken from `App/Firelight.storekit`, which is what the app asks
 StoreKit for — so the store and the app agree by construction rather than by
