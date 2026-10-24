@@ -63,11 +63,16 @@
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
 	</dict>
+	<!-- `audio` and nothing else. Downloads resume through a background
+	     URLSession, which needs no background mode of its own — the app's
+	     only `.backgroundTask` is `.urlSession(…)`. `fetch` and `processing`
+	     were declared and never used: nothing here touches BGTaskScheduler,
+	     and `processing` without `BGTaskSchedulerPermittedIdentifiers` fails
+	     App Store validation outright (error 90771). An unused background
+	     mode is also a 2.5.4 rejection. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
-		<string>fetch</string>
-		<string>processing</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
