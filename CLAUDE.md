@@ -462,40 +462,46 @@ killing a run part-way skips every cleanup path, which is how two screenshot
 runs ended up playing an audiobook into a room. Anything that drives playback
 unattended passes the flag.
 
-## The tip jar does not load products locally — unresolved
+## The StoreKit configuration must be in Xcode's current format
 
-`App/Firelight.storekit` holds all four tips with prices and descriptions,
-and `project.yml` points both schemes at it. It still does not work:
-`Product.products(for:)` returns **zero products and throws nothing**, so the
-tip jar shows its empty state everywhere — `xcodebuild test`, and ⌘R.
+`App/Firelight.storekit` drives the tip jar in the simulator and on device
+when the app is launched from Xcode. It spent a long time returning **zero
+products and throwing nothing**, which is the signature of a configuration
+file StoreKit cannot use rather than of a wiring problem.
 
-Ruled out, so nobody repeats them:
+The cause was the file's own shape. It was hand-written as **version 3.0**
+with an empty `settings` block, and a configuration with no `_locale` and no
+`_storefront` has nothing to resolve prices against. Comparing it against a
+file Xcode wrote itself was what settled it. A working file carries:
 
-- The file is malformed. It is not: valid JSON, correct top-level keys,
-  four consumables.
-- The file is missing from the project. It is not — and it is no longer
-  wrongly a *Resource* either. `project.yml` now lists it a second time with
-  `buildPhase: none`, so it is a project member in no build phase and does
-  not ship in the bundle. That was worth doing on its own, and it did not
-  fix the tip jar.
-- The path is wrong. XcodeGen writes `../../App/Firelight.storekit`, which
-  resolves inside the `.xcodeproj` and matches nothing. Correcting it to
-  `../../../` made the path resolve — and changed nothing.
-- Only the Run action has it. Copying the reference into the Test action
-  also changed nothing.
+- `version` `{major: 4, minor: 0}`
+- `settings` with `_applicationInternalID`, `_locale` (`en_US`),
+  `_storefront` (`USA`), `_failTransactionsEnabled`, `_lastSynchronizedDate`
+  and the nine `_storeKitErrors` entries
+- an `appPolicies` block
+- numeric `internalID`s, not words like `TIP1`
 
-**Do not fight this to test the tip jar.** Once the four products exist in
-App Store Connect, a sandbox or TestFlight build loads them for real. That is
-the shorter path, and it is the one the release needs anyway. The four
-products now **do** exist in App Store Connect (`scripts/appstore_tips.py`),
-so the next TestFlight build is the first chance to see the tip jar populated
-— and that screen is also the IAP review screenshot each product still needs.
+`_developerTeamID` is **deliberately empty**: this file is in a public repo
+and the team id stays out of it. Products load fine without it.
 
-One more dead end, so it is not repeated: a probe test that asks
-`Product.products(for:)` for the four ids and asserts the count cannot settle
-this from the command line, because `-only-testing:` does not match a Swift
-Testing function and the run exits 0 having executed nothing. See the
-`Executed 0 tests` gotcha above.
+Things that were blamed and were not the cause, so nobody repeats them:
+
+- The path. XcodeGen writes `../../App/Firelight.storekit`, which is exactly
+  the shape Xcode itself writes — the `../../` escapes
+  `xcshareddata/xcschemes` and the remainder is relative to the project
+  directory. Every working project on this machine uses the same form. An
+  earlier session "corrected" it to `../../../` and genuinely broke it.
+  **Leave XcodeGen's output alone.**
+- Project membership. It is a member via a second `project.yml` entry with
+  `buildPhase: none`, which keeps it out of the shipped bundle. Worth doing,
+  verified absent from a Release `.ipa` — but not the fix.
+- App Store Connect. A local configuration does not consult it at all.
+
+Do not try to settle this from the command line. `-only-testing:` does not
+match a Swift Testing function, so the run executes nothing and exits 0
+claiming success — see the `Executed 0 tests` gotcha above — and running the
+whole suite to reach one probe risks `AudioEngineLiveTests` playing audio
+into the room. ⌘R and look at the screen.
 
 ## Rules that are not negotiable
 

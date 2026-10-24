@@ -1,11 +1,21 @@
 {
+  "appPolicies": {
+    "eula": "",
+    "policies": [
+      {
+        "locale": "en_US",
+        "policyText": "",
+        "policyURL": ""
+      }
+    ]
+  },
   "identifier": "FirelightTips",
   "nonRenewingSubscriptions": [],
   "products": [
     {
       "displayPrice": "0.99",
       "familyShareable": false,
-      "internalID": "TIP1",
+      "internalID": "6001000001",
       "localizations": [
         {
           "description": "A small thank you.",
@@ -20,7 +30,7 @@
     {
       "displayPrice": "2.99",
       "familyShareable": false,
-      "internalID": "TIP2",
+      "internalID": "6001000002",
       "localizations": [
         {
           "description": "A slightly larger thank you.",
@@ -35,7 +45,7 @@
     {
       "displayPrice": "4.99",
       "familyShareable": false,
-      "internalID": "TIP3",
+      "internalID": "6001000003",
       "localizations": [
         {
           "description": "A generous thank you.",
@@ -50,7 +60,7 @@
     {
       "displayPrice": "9.99",
       "familyShareable": false,
-      "internalID": "TIP4",
+      "internalID": "6001000004",
       "localizations": [
         {
           "description": "A very generous thank you.",
@@ -63,10 +73,64 @@
       "type": "Consumable"
     }
   ],
-  "settings": {},
+  "settings": {
+    "_applicationInternalID": "6826362835",
+    "_developerTeamID": "",
+    "_failTransactionsEnabled": false,
+    "_lastSynchronizedDate": 0,
+    "_locale": "en_US",
+    "_storeKitErrors": [
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Load Products"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Purchase"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Verification"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Store Sync"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Subscription Status"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Transaction"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Manage Subscriptions Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Refund Request Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Offer Code Redeem Sheet"
+      }
+    ],
+    "_storefront": "USA"
+  },
   "subscriptionGroups": [],
   "version": {
-    "major": 3,
+    "major": 4,
     "minor": 0
   }
 }
