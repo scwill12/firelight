@@ -312,11 +312,10 @@ struct ItemDetailView: View {
                     }
                     .disabled(isPreparingShare)
                     .accessibilityLabel(L("Share the downloaded files"))
-                    Button(role: .destructive) {
-                        Task { await environment.downloads.remove(itemID: item.id) }
-                    } label: {
-                        Image(systemName: "trash")
-                    }
+                    // No delete here on purpose. A single tap beside Share,
+                    // throwing away hundreds of megabytes, is too easy to hit
+                    // by mistake; Storage is where downloads are managed, and
+                    // a swipe there is already a deliberate two-step gesture.
                 }
             }
             .font(Typography.body)
