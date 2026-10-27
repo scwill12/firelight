@@ -48,6 +48,12 @@ public final class AppEnvironment {
     public private(set) var coverPalette: CoverPalette = .fallback
     /// Kids mode: a simplified library, locked behind the device passcode.
     public private(set) var isKidsMode: Bool = SharedState.isKidsModeEnabled
+    /// Set once per launch, when this is the open to ask for a rating on.
+    /// `RootView` does the asking: the prompt needs a scene, which this has
+    /// not got, and it should land on a drawn library rather than a launch
+    /// screen.
+    public var shouldAskForReview = false
+    private let reviewPrompts = ReviewPromptStore()
 
     public var servers: [ServerDescriptor] { session.servers }
 
@@ -355,6 +361,12 @@ public final class AppEnvironment {
     public func start() async {
         await session.load()
         SharedState.serverCount = session.servers.count
+        // Counted once per cold launch, and only for someone who has got as
+        // far as a server — asking anyone else to rate Firelight would be
+        // asking them to rate a sign-in screen.
+        if !session.servers.isEmpty {
+            shouldAskForReview = reviewPrompts.recordOpen()
+        }
         await library.load()
 
         await session.connect()

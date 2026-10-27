@@ -1,4 +1,5 @@
 import DesignSystem
+import StoreKit
 import SwiftUI
 
 /// The app's root.
@@ -7,6 +8,7 @@ import SwiftUI
 /// else it could usefully show. Once there is one, the library takes over.
 public struct RootView: View {
     @Environment(AppEnvironment.self) private var environment
+    @Environment(\.requestReview) private var requestReview
     @State private var handoffItemID: String?
 
     public init() {}
@@ -23,6 +25,17 @@ public struct RootView: View {
         }
         .environment(\.coverImageProvider, environment.coverProvider)
         .tint(Palette.accent)
+        // Third open, once the library has had a moment to draw. The decision
+        // and the counting live in `ReviewPromptStore`; all this does is pick
+        // the moment, because a prompt over a half-drawn screen reads as a
+        // fault rather than a question.
+        .task(id: environment.shouldAskForReview) {
+            guard environment.shouldAskForReview else { return }
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            requestReview()
+            environment.shouldAskForReview = false
+        }
         .onContinueUserActivity(HandoffActivity.itemType) { activity in
             guard let payload = HandoffActivity.payload(from: activity.userInfo) else { return }
             // Only act on a handoff for the server we are actually signed into;
