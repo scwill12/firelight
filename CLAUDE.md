@@ -90,6 +90,11 @@ settings or dependencies means editing `project.yml`.
   `products:`.
 - Simulator taps are in **device points** (402×874 on an iPhone 16 Pro), not
   screenshot pixels. Divide screenshot coordinates by the scale factor first.
+- **A String Catalog is written `"key" : value`, with a space before the
+  colon, and its keys are not in any order a script can reproduce.** Editing
+  one with `json.dump` rewrites all 4,400 lines unless you pass
+  `separators=(",", " : ")`, and sorting the keys rewrites them twice over. To
+  add a key, insert it in place and keep the existing order.
 - `Section(isExpanded:)` has no variant that also takes a `footer`. Use a
   plain section, or move the explanation into the content.
 - Two catalog keys that differ only by case ("Sign In" / "Sign in") collide in
