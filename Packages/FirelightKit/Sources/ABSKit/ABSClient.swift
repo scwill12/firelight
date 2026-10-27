@@ -35,6 +35,28 @@ public struct ABSClient: Sendable {
         try await http.send(try ABSEndpoint.login(username: username, password: password), decoding: LoginResponse.self)
     }
 
+    /// Creates an account for an invitation. Admin only.
+    public func createUser(username: String, password: String) async throws -> ABSUser {
+        try await http.send(
+            try ABSEndpoint.createUser(username: username, password: password),
+            decoding: CreatedUserResponse.self
+        ).user
+    }
+
+    /// Replaces the signed-in account's own password and returns the tokens
+    /// that survive it.
+    ///
+    /// Audiobookshelf invalidates every other session for the account when a
+    /// password changes — which is the property that makes a redeemed
+    /// invitation a spent match — so the caller must store what comes back or
+    /// find itself signed out.
+    public func changeOwnPassword(current: String, new: String) async throws -> LoginResponse {
+        try await http.send(
+            try ABSEndpoint.changeOwnPassword(current: current, new: new),
+            decoding: LoginResponse.self
+        )
+    }
+
     public func refresh(refreshToken: String) async throws -> LoginResponse {
         try await http.send(ABSEndpoint.refresh(refreshToken: refreshToken), decoding: LoginResponse.self)
     }

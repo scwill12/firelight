@@ -102,3 +102,9 @@ public struct LoginResponse: Sendable, Hashable, Codable {
         self.userDefaultLibraryId = userDefaultLibraryId
     }
 }
+
+
+/// What `POST /api/users` sends back: the account it just made, wrapped.
+public struct CreatedUserResponse: Sendable, Hashable, Codable {
+    public let user: ABSUser
+}

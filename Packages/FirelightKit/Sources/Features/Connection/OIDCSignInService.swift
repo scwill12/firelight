@@ -98,6 +98,9 @@ public enum SessionError: LocalizedError, Equatable {
     case openIDStateMismatch
     case cancelled
     case storeUnavailable
+    /// Signed in from an invitation, but the temporary password is still the
+    /// account's password — so the code that carried it is still live.
+    case passwordNotChanged
 
     public var errorDescription: String? {
         switch self {
@@ -117,6 +120,12 @@ public enum SessionError: LocalizedError, Equatable {
             "Sign-in was cancelled."
         case .storeUnavailable:
             "Firelight couldn't open its database."
+        case .passwordNotChanged:
+            """
+            You're signed in, but your password wasn't changed, so the \
+            invitation you were sent still works. Change your password in \
+            your server's web interface.
+            """
         }
     }
 }

@@ -24,6 +24,7 @@ public struct OnboardingView: View {
     @State private var checkTask: Task<Void, Never>?
     @State private var isSigningIn = false
     @State private var isStartingDemo = false
+    @State private var isShowingInvitation = false
     @State private var errorMessage: String?
 
     /// Set when this is the first server; the sheet can't be dismissed then.
@@ -40,6 +41,7 @@ public struct OnboardingView: View {
                 if check?.isReachable == true {
                     signInSection
                 }
+                if isFirstServer { invitationSection }
                 if isFirstServer { demoSection }
                 advancedSection
             }
@@ -60,6 +62,7 @@ public struct OnboardingView: View {
                 Text(errorMessage ?? "")
             }
         }
+        .sheet(isPresented: $isShowingInvitation) { PasteInvitationView() }
         .tint(Palette.accent)
     }
 
@@ -210,6 +213,23 @@ public struct OnboardingView: View {
             if check?.supportsOpenID == true {
                 Text(L("Single sign-on needs \(OIDCSignInService.redirectURI) in your server's mobile redirect URIs."))
             }
+        }
+    }
+
+    // MARK: - Invitation
+
+    /// For someone who was given an account rather than running the server.
+    /// They have no address to type and no password yet — only a code.
+    private var invitationSection: some View {
+        Section {
+            Button {
+                isShowingInvitation = true
+            } label: {
+                Label(L("I have an invitation"), systemImage: "envelope.open")
+            }
+            .disabled(isSigningIn || isStartingDemo)
+        } footer: {
+            Text(L("Someone who runs a server can invite you. Paste the code they sent and choose your own password."))
         }
     }
 

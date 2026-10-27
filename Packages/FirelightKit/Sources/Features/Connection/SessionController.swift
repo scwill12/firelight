@@ -190,6 +190,46 @@ public final class SessionController {
         }
     }
 
+    /// Accepts an invitation: signs in with the temporary password from the
+    /// code, then immediately replaces it with the one the person chose.
+    ///
+    /// The replacement is the whole point. Audiobookshelf invalidates every
+    /// other session for an account when its password changes, so the moment
+    /// this succeeds the code is spent and anyone else holding it is evicted.
+    /// Until it succeeds, the code is still a live credential — which is why
+    /// a failure here is reported rather than swallowed.
+    public func redeem(_ invite: Invite, choosing newPassword: String) async throws -> UserSummary {
+        guard !invite.hasExpired() else { throw InviteError.expired }
+
+        // The ordinary path: verify the server, add it, sign in. Named after
+        // its host, the way every server added by hand is.
+        let summary = try await addServer(
+            displayName: "",
+            remoteURLText: invite.serverURL.absoluteString,
+            localURLText: nil,
+            username: invite.username,
+            password: invite.temporaryPassword
+        )
+
+        guard let client = client() else {
+            throw SessionError.passwordNotChanged
+        }
+        do {
+            let response = try await client.changeOwnPassword(
+                current: invite.temporaryPassword,
+                new: newPassword
+            )
+            // These tokens are the ones that survive the change; the previous
+            // pair was invalidated along with the password.
+            try await factory.authStore(for: summary.serverID).persist(response.user)
+        } catch {
+            // Signed in, but still on the temporary password. Saying so is
+            // better than leaving someone to believe a spent code is spent.
+            throw SessionError.passwordNotChanged
+        }
+        return summary
+    }
+
     /// Adds the built-in demo library and signs into it.
     ///
     /// Deliberately the *same* path as a real server: it adds a server,

@@ -210,6 +210,71 @@ public enum ABSEndpoint {
         HTTPRequest(path: "/api/users")
     }
 
+    /// Creates the account an invitation is for. Admin only.
+    ///
+    /// Two things verified in `UserController.create` rather than assumed:
+    ///
+    /// - **`isActive` defaults to `false`.** An account created without it
+    ///   cannot sign in, and says nothing about why, so it is always sent.
+    /// - A plain `user` already defaults to `download` true with `update`,
+    ///   `delete`, `upload` and `createEreader` false — exactly what an
+    ///   invitation wants. They are sent explicitly anyway, so a later change
+    ///   to the server's defaults cannot quietly widen them. Keys the server
+    ///   does not recognise are ignored, so this is safe across versions.
+    ///
+    /// The type is `user`, never `guest`: a guest cannot change their own
+    /// password, and redeeming an invitation is exactly that.
+    public static func createUser(
+        username: String,
+        password: String
+    ) throws -> HTTPRequest {
+        struct Permissions: Encodable {
+            let download = true
+            let update = false
+            let delete = false
+            let upload = false
+            let createEreader = false
+            let accessAllLibraries = true
+            let accessAllTags = true
+            let accessExplicitContent = false
+        }
+        struct Body: Encodable {
+            let username: String
+            let password: String
+            let type = "user"
+            let isActive = true
+            let permissions = Permissions()
+        }
+        return HTTPRequest(
+            method: .post,
+            path: "/api/users",
+            body: try ABSJSON.encoder.encode(Body(username: username, password: password))
+        )
+    }
+
+    /// Replaces the signed-in account's own password.
+    ///
+    /// `x-return-tokens` is what makes the server hand back fresh tokens in
+    /// the body. It matters here more than anywhere: changing a password
+    /// invalidates every other session for the account, including this one,
+    /// so without the new tokens the app would log itself out at the exact
+    /// moment someone accepted an invitation.
+    public static func changeOwnPassword(
+        current: String,
+        new: String
+    ) throws -> HTTPRequest {
+        struct Body: Encodable {
+            let password: String
+            let newPassword: String
+        }
+        return HTTPRequest(
+            method: .patch,
+            path: "/api/me/password",
+            headers: ["x-return-tokens": "true"],
+            body: try ABSJSON.encoder.encode(Body(password: current, newPassword: new))
+        )
+    }
+
     public static func onlineUsers() -> HTTPRequest {
         HTTPRequest(path: "/api/users/online")
     }
