@@ -503,6 +503,46 @@ claiming success — see the `Executed 0 tests` gotcha above — and running the
 whole suite to reach one probe risks `AudioEngineLiveTests` playing audio
 into the room. ⌘R and look at the screen.
 
+## Invitations
+
+An invitation is a **pasteable code**, never a link. A link needs a domain to
+host its landing page on, and a client for self-hosted servers has no business
+routing other people's invitations through its author's website. The code is
+about 110 characters and carries four fields; the server's name and the
+person's name are fetched after redemption rather than carried, which is both
+shorter and more accurate. `docs/Invite-codes.md` has the reasoning.
+
+The security model is **spend on redemption**: the code holds a temporary
+password the admin never sees, and the invitation screen replaces it with one
+the invited person chooses. Audiobookshelf invalidates every other session for
+an account when its password changes, so redeeming evicts anyone else holding
+the code. Until redemption the code *is* the account — which is why invited
+accounts get no update, delete or upload permission, and why codes expire.
+
+Four things verified against the server's source, each of which fails
+silently if forgotten:
+
+- `POST /api/users` defaults **`isActive` to false**. An account created
+  without it cannot sign in and says nothing about why.
+- `PATCH /api/me/password` must send `x-return-tokens`, or the app logs
+  itself out at the moment someone accepts: the change invalidates the very
+  session making it, and the replacement tokens only come back in the body.
+- That endpoint **rejects guests with 403**, so invitations create `user`.
+- A plain `user` already defaults to the right permissions. They are sent
+  explicitly anyway, so a change to the server's defaults cannot widen them.
+
+Two traps that are about the network rather than the API:
+
+- The invitation carries the server's **`remoteURL`**, not
+  `session.baseURL(for:)`. The latter is whichever address this device
+  resolved to, which at home is the LAN one — an invitation carrying
+  `192.168.x.x` reaches nobody outside the house. The field is editable
+  because only the admin knows which address a given person can reach.
+- **Custom headers are not carried**, and the invite screen says so when the
+  server has any. They are a shared secret that redemption would not spend,
+  so a code carrying them would stay dangerous forever. A server behind
+  Cloudflare Access needs the person granted there, not handed a token.
+
 ## Rules that are not negotiable
 
 1. One phase at a time. Stop at its checkpoint and print the device test list.
