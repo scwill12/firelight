@@ -15,6 +15,7 @@ struct AdminView: View {
     @State private var sessions: [ABSListeningSession] = []
     @State private var isWorking = false
     @State private var message: String?
+    @State private var isShowingInvite = false
 
     var body: some View {
         List {
@@ -104,8 +105,15 @@ struct AdminView: View {
                     }
                     .accessibilityElement(children: .combine)
                 }
+                Button {
+                    isShowingInvite = true
+                } label: {
+                    Label(L("Invite someone"), systemImage: "person.badge.plus")
+                }
             } header: {
                 Text(L("Users"))
+            } footer: {
+                Text(L("An invited account can download and read, and nothing else."))
             }
 
             Section {
@@ -121,6 +129,9 @@ struct AdminView: View {
         .navigationTitle(Text(L("Server admin")))
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await load() }
+        .sheet(isPresented: $isShowingInvite, onDismiss: { Task { await load() } }) {
+            InviteSomeoneView()
+        }
         .task { await load() }
     }
 
