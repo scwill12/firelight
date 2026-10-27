@@ -18,6 +18,8 @@ struct ItemDetailView: View {
     @State private var isShowingReader = false
     @State private var isShowingExport = false
     @State private var isShowingFollowAlong = false
+    @State private var shareFiles: StagedShare?
+    @State private var isPreparingShare = false
 
     /// Small on purpose. The cover used to fill the screen and push Play below
     /// the fold, so starting a book you had just tapped meant scrolling first.
@@ -63,6 +65,9 @@ struct ItemDetailView: View {
             if let item {
                 ExportSheet(item: item)
             }
+        }
+        .sheet(item: $shareFiles) { staged in
+            ShareSheet(items: staged.urls)
         }
         .sheet(isPresented: $isShowingFollowAlong) {
             if let item {
@@ -217,6 +222,27 @@ struct ItemDetailView: View {
         }
     }
 
+    /// Copies the downloaded files somewhere a recipient can make sense of
+    /// them, then hands them to the share sheet — AirDrop, Files, Messages,
+    /// whatever the person has.
+    private func prepareShare(_ item: LibraryItemSummary) async {
+        isPreparingShare = true
+        defer { isPreparingShare = false }
+
+        let tracks = await environment.downloads.localTracks(forItemID: item.id, episodeID: nil)
+        guard !tracks.isEmpty else { return }
+
+        // Anything staged for an earlier share is a second copy of an
+        // audiobook sitting in tmp; clear it before making another.
+        SharedDownload.clearStaged()
+        guard let urls = try? SharedDownload.stage(
+            title: item.title,
+            sources: tracks.map(\.url)
+        ), !urls.isEmpty else { return }
+
+        shareFiles = StagedShare(urls: urls)
+    }
+
     /// Where to set up following along, for someone who has not pressed play
     /// yet. The same sheet is a tap away inside the player.
     @ViewBuilder
@@ -275,6 +301,17 @@ struct ItemDetailView: View {
                     )
                     .foregroundStyle(Palette.accent)
                     Spacer()
+                    Button {
+                        Task { await prepareShare(item) }
+                    } label: {
+                        if isPreparingShare {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                    .disabled(isPreparingShare)
+                    .accessibilityLabel(L("Share the downloaded files"))
                     Button(role: .destructive) {
                         Task { await environment.downloads.remove(itemID: item.id) }
                     } label: {
@@ -358,4 +395,11 @@ struct ItemDetailView: View {
         }
         .accessibilityElement(children: .combine)
     }
+}
+
+
+/// The staged files, identified so a sheet can be driven from them.
+struct StagedShare: Identifiable {
+    let urls: [URL]
+    var id: String { urls.map(\.lastPathComponent).joined() }
 }
