@@ -95,7 +95,7 @@ struct ItemDetailView: View {
                 NavigationLink {
                     PositionHistoryView(itemID: item.id)
                 } label: {
-                    Label(L("Position history"), systemImage: "clock.arrow.circlepath")
+                    Label(L("Listening history"), systemImage: "clock.arrow.circlepath")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, Spacing.s)
                 }

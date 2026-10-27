@@ -85,64 +85,166 @@ struct ConflictPromptView: View {
     }
 }
 
-/// Every position this book has been at, and where it came from.
+/// When this book was listened to, and what each stretch covered.
+///
+/// Sessions rather than position marks. A list of positions answers "where
+/// was I?", which matters exactly once — when two devices disagree. A list of
+/// sessions answers "when did I listen, and for how long?", which is what
+/// someone wants from a book they have been at for a fortnight. The raw marks
+/// are still here, one tap away, because the first question is still worth
+/// being able to ask.
 struct PositionHistoryView: View {
     let itemID: String
 
     @Environment(AppEnvironment.self) private var environment
     @State private var entries: [ProgressJournalEntry] = []
+    @State private var sessions: [ListeningSession] = []
     @State private var isLoading = true
 
     var body: some View {
         Group {
             if isLoading {
                 LoadingStateView()
-            } else if entries.isEmpty {
+            } else if sessions.isEmpty && entries.isEmpty {
                 EmptyStateView(
                     systemImage: "clock.arrow.circlepath",
                     title: Text(L("No history yet")),
-                    message: Text(L("Positions appear here as you listen, on every device."))
+                    message: Text(L("Each time you listen appears here, on every device."))
                 )
             } else {
                 List {
-                    ForEach(entries) { entry in
-                        Button {
-                            environment.player.applyRemotePosition(entry.position)
-                        } label: {
-                            LabeledContent {
-                                Text(verbatim: PlaybackController.timecode(entry.position.currentTime ?? 0))
-                                    .font(Typography.timecode)
-                                    .foregroundStyle(Palette.accent)
-                            } label: {
-                                VStack(alignment: .leading, spacing: Spacing.hair) {
-                                    Text(verbatim: entry.position.deviceLabel)
-                                        .foregroundStyle(Palette.primaryText)
-                                    HStack(spacing: Spacing.xs) {
-                                        Text(verbatim: entry.position.updatedAt.formatted(
-                                            date: .abbreviated, time: .shortened
-                                        ))
-                                        if entry.syncState == .pending {
-                                            Text(L("Not synced yet"))
-                                                .foregroundStyle(Palette.notice)
-                                        }
-                                    }
-                                    .font(Typography.caption)
-                                    .foregroundStyle(Palette.secondaryText)
-                                }
-                            }
+                    if sessions.isEmpty {
+                        Section {
+                            Text(L("Nothing long enough to count as a listen yet."))
+                                .font(Typography.caption)
+                                .foregroundStyle(Palette.secondaryText)
                         }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityHint(L("Jumps to this position"))
+                    } else {
+                        ForEach(sessions) { session in
+                            sessionRow(session)
+                        }
+                    }
+
+                    Section {
+                        NavigationLink {
+                            PositionMarksView(entries: entries, itemID: itemID)
+                        } label: {
+                            Label(L("Position marks"), systemImage: "mappin.and.ellipse")
+                        }
+                    } footer: {
+                        Text(L("Every individual position this book has been at, including ones from other devices. Useful when two devices disagree."))
                     }
                 }
-                .listStyle(.plain)
+                .listStyle(.insetGrouped)
             }
         }
-        .navigationTitle(Text(L("Position history")))
+        .navigationTitle(Text(L("Listening history")))
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            entries = await environment.sync.history(itemID: itemID)
+            // A wider window than the conflict prompt needs: sessions are only
+            // meaningful across weeks.
+            entries = await environment.sync.history(itemID: itemID, limit: 500)
+            sessions = ListeningSessionBuilder().sessions(from: entries)
             isLoading = false
         }
+    }
+
+    private func sessionRow(_ session: ListeningSession) -> some View {
+        Button {
+            environment.player.seek(to: session.endPosition)
+        } label: {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(verbatim: Self.when(session))
+                        .font(Typography.emphasisedBody)
+                        .foregroundStyle(Palette.primaryText)
+                    Spacer(minLength: Spacing.s)
+                    Text(verbatim: Format.duration(session.secondsListened))
+                        .font(Typography.duration)
+                        .foregroundStyle(Palette.accent)
+                }
+
+                HStack(spacing: Spacing.xs) {
+                    Text(verbatim: PlaybackController.timecode(session.startPosition))
+                    Image(systemName: "arrow.right")
+                        .font(.caption2)
+                    Text(verbatim: PlaybackController.timecode(session.endPosition))
+                    if session.finishedHere {
+                        Text(L("Finished"))
+                            .foregroundStyle(Palette.accent)
+                    }
+                }
+                .font(Typography.timecode)
+                .foregroundStyle(Palette.secondaryText)
+
+                // Only worth saying when it was not all one device — on a
+                // single phone the name is the same on every row and adds
+                // nothing but height.
+                if session.deviceLabels.count > 1 {
+                    Text(verbatim: session.deviceLabels.joined(separator: ", "))
+                        .font(Typography.caption)
+                        .foregroundStyle(Palette.secondaryText)
+                }
+            }
+            .padding(.vertical, Spacing.hair)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(L("Jumps to where this listen ended"))
+    }
+
+    /// "Tuesday 21 October, 8:12–8:54 pm" — the day matters as much as the
+    /// clock, because the question is usually "when did I last pick this up?"
+    static func when(_ session: ListeningSession) -> String {
+        let day = session.startedAt.formatted(.dateTime.weekday(.wide).day().month(.wide))
+        let from = session.startedAt.formatted(date: .omitted, time: .shortened)
+        let to = session.endedAt.formatted(date: .omitted, time: .shortened)
+        return from == to ? "\(day), \(from)" : "\(day), \(from) – \(to)"
+    }
+}
+
+/// The raw journal: every position, where it came from, and whether it synced.
+struct PositionMarksView: View {
+    let entries: [ProgressJournalEntry]
+    let itemID: String
+
+    @Environment(AppEnvironment.self) private var environment
+
+    var body: some View {
+        List {
+            ForEach(entries) { entry in
+                Button {
+                    environment.player.applyRemotePosition(entry.position)
+                } label: {
+                    LabeledContent {
+                        Text(verbatim: PlaybackController.timecode(entry.position.currentTime ?? 0))
+                            .font(Typography.timecode)
+                            .foregroundStyle(Palette.accent)
+                    } label: {
+                        VStack(alignment: .leading, spacing: Spacing.hair) {
+                            Text(verbatim: entry.position.deviceLabel)
+                                .foregroundStyle(Palette.primaryText)
+                            HStack(spacing: Spacing.xs) {
+                                Text(verbatim: entry.position.updatedAt.formatted(
+                                    date: .abbreviated, time: .shortened
+                                ))
+                                if entry.syncState == .pending {
+                                    Text(L("Not synced yet"))
+                                        .foregroundStyle(Palette.notice)
+                                }
+                            }
+                            .font(Typography.caption)
+                            .foregroundStyle(Palette.secondaryText)
+                        }
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityHint(L("Jumps to this position"))
+            }
+        }
+        .listStyle(.plain)
+        .navigationTitle(Text(L("Position marks")))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
