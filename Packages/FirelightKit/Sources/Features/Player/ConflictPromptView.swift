@@ -151,7 +151,7 @@ struct PositionHistoryView: View {
 
     private func sessionRow(_ session: ListeningSession) -> some View {
         Button {
-            environment.player.seek(to: session.endPosition)
+            Task { await environment.resume(itemID: itemID, at: session.endPosition) }
         } label: {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 HStack(alignment: .firstTextBaseline) {
@@ -191,7 +191,7 @@ struct PositionHistoryView: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityHint(L("Jumps to where this listen ended"))
+        .accessibilityHint(L("Plays from where this listen ended"))
     }
 
     /// "Tuesday 21 October, 8:12–8:54 pm" — the day matters as much as the
@@ -215,7 +215,8 @@ struct PositionMarksView: View {
         List {
             ForEach(entries) { entry in
                 Button {
-                    environment.player.applyRemotePosition(entry.position)
+                    guard let seconds = entry.position.currentTime else { return }
+                    Task { await environment.resume(itemID: itemID, at: seconds) }
                 } label: {
                     LabeledContent {
                         Text(verbatim: PlaybackController.timecode(entry.position.currentTime ?? 0))
@@ -240,7 +241,7 @@ struct PositionMarksView: View {
                     }
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityHint(L("Jumps to this position"))
+                .accessibilityHint(L("Plays from this position"))
             }
         }
         .listStyle(.plain)

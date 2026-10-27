@@ -111,14 +111,16 @@ public struct ListeningSessionBuilder: Sendable {
         )
     }
 
-    /// The recorded total when there is one, because the player counted it as
-    /// it went and knows about pauses. Otherwise measured from how far the
-    /// position moved, under the same rules the statistics use: backwards is
-    /// a seek, and faster than 4× is a skip.
+    /// Measured from how far the position moved, under the same rules the
+    /// statistics use: backwards is a seek, and faster than 4× is a skip.
+    ///
+    /// An earlier version preferred the entry's own `timeListening`, on the
+    /// grounds that the player counted it as it went. That was wrong: the
+    /// field is a running total that outlives the stretch it was counted in,
+    /// so merely *reopening* a finished book inherited the previous session's
+    /// total and reported a full listen against a position that never moved.
+    /// Movement is the only evidence of listening that cannot be stale.
     private func secondsListened(in group: [ProgressJournalEntry]) -> TimeInterval {
-        let recorded = group.map(\.timeListening).max() ?? 0
-        if recorded > 0 { return recorded }
-
         var total: TimeInterval = 0
         for (previous, entry) in zip(group, group.dropFirst()) {
             guard let from = previous.position.currentTime,

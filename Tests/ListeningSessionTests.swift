@@ -86,18 +86,19 @@ struct ListeningSessionTests {
         #expect(sessions.count == 2)
     }
 
-    @Test("The recorded total is preferred over measuring the positions")
-    func prefersRecordedTotal() throws {
-        // Position moved 600s, but the player recorded 420s of listening —
-        // the difference is a skip forward, which the player knew about.
-        let sessions = builder.sessions(from: [
-            entry(minutes: 0, position: 0, sessionID: "a", listened: 420),
-            entry(minutes: 10, position: 600, sessionID: "a", listened: 420),
-        ])
-        #expect(try #require(sessions.first).secondsListened == 420)
+    @Test("Reopening a finished book is not a listen, whatever the total says")
+    func staleTotalDoesNotInventListening() {
+        // Regression. `timeListening` is a running total that outlives the
+        // stretch it was counted in, so an entry written when the book was
+        // merely reopened at the end carried the previous session's 59
+        // seconds. Measured by movement, this is what it is: nothing.
+        #expect(builder.sessions(from: [
+            entry(minutes: 0, position: 59, sessionID: "b", listened: 59),
+            entry(minutes: 1, position: 59, sessionID: "b", listened: 59),
+        ]).isEmpty)
     }
 
-    @Test("Without a recorded total, listening is measured by position")
+    @Test("Listening is measured by how far the position moved")
     func fallsBackToMeasuring() throws {
         let sessions = builder.sessions(from: [
             entry(minutes: 0, position: 0),

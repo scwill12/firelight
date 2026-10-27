@@ -284,6 +284,23 @@ public final class AppEnvironment {
         await player.open(itemID: item.id, title: item.title, author: item.author)
     }
 
+    /// Takes the listener to a particular second of a book, opening it first
+    /// when it is not the one already playing.
+    ///
+    /// Both `PlaybackController.seek` and `applyRemotePosition` do nothing
+    /// unless that item is loaded, which is right for them — seeking a book
+    /// you are not playing is meaningless. The history screens want the other
+    /// behaviour: "take me there", which may mean opening the book first.
+    /// Without this they looked tappable and silently did nothing.
+    public func resume(itemID: String, at seconds: TimeInterval) async {
+        if player.itemID != itemID {
+            guard let item = await library.item(id: itemID) else { return }
+            await play(item: item)
+        }
+        player.seek(to: seconds)
+        Haptics.success()
+    }
+
     /// Opens one podcast episode. The cover is the show's.
     public func play(episode: EpisodeSummary, showTitle: String) async {
         await updateCoverPalette(forItemID: episode.itemID)
