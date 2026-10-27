@@ -65,10 +65,13 @@ public struct Invite: Sendable, Hashable, Codable {
 /// The encoding is base64url, which is **not encryption**. Whoever holds the
 /// link holds the credential until it is redeemed.
 public enum InviteLink {
-    /// The page that greets someone without the app. Lives on GitHub Pages;
-    /// `Invite.md` in the docs folder says what it has to serve.
+    /// The page that greets someone without the app.
+    ///
+    /// At the root of the domain rather than under `/firelight`, for two
+    /// reasons: it cannot collide with the project repository's own Pages
+    /// site if that is ever turned on, and it makes the link shorter.
     public static let webHost = "scwill12.github.io"
-    public static let webPath = "/firelight/join"
+    public static let webPath = "/join"
 
     /// Kept for testing and for a device that has the app but no association
     /// yet. Links sent to people are always the `https` form.

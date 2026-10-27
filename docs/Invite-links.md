@@ -21,53 +21,60 @@
 | Firelight not installed | Safari opens the page, which offers the App Store |
 | Association not yet set up | Safari opens the page; the app is not offered |
 
-## 1. The association file, and where it has to live
+## 1. The association file — DONE
 
-Universal Links require Apple to fetch:
+Live and serving:
 
 ```
-https://scwill12.github.io/.well-known/apple-app-site-association
+https://scwill12.github.io/.well-known/apple-app-site-association   200
+https://scwill12.github.io/join/                                    200
 ```
 
-That path is at the **domain root**, and on GitHub Pages the root of
-`scwill12.github.io` is served by a repository named exactly
-`scwill12.github.io` — not by the `firelight` project repo, which only owns
-`/firelight/`. So serving this means creating that user-site repository.
+Served from the `scwill12.github.io` repository, because Apple validates
+Universal Links only from the **domain root** and on GitHub Pages the root
+belongs to a user-site repository, not a project one. `.nojekyll` is in that
+repo for a reason: Jekyll skips any directory beginning with a dot, so
+without it `.well-known` is never published.
 
-Contents, once the Team ID is known:
+The link path is `/join`, not `/firelight/join`, so it cannot collide with
+the project repository's own Pages site if that is ever turned on — and the
+link is shorter.
 
-```json
-{
-  "applinks": {
-    "details": [
-      {
-        "appIDs": ["<TeamID>.com.colewilliams.firelight"],
-        "components": [{ "/": "/firelight/join*" }]
-      }
-    ]
-  }
-}
+**The one known risk.** The file comes back as
+`content-type: application/octet-stream`; GitHub Pages cannot be told to
+serve it as `application/json`. Apple's CDN has tolerated this for years, but
+if the association refuses to validate, this is the first thing to check, and
+the fix is a custom domain behind something that can set headers.
+
+The Team ID is in that file in public, which is unavoidable: Apple's design
+requires it, and every app using Universal Links publishes its own. That is
+why it is there and still not in `project.yml`.
+
+## 2. The capability — NEEDS YOU
+
+This is the only thing standing between the link and the app opening.
+
+1. developer.apple.com → Identifiers → `com.colewilliams.firelight` → tick
+   **Associated Domains** → Save.
+2. Then add this back to `App/Firelight.entitlements`:
+
+```xml
+<key>com.apple.developer.associated-domains</key>
+<array>
+    <string>applinks:scwill12.github.io</string>
+</array>
 ```
 
-Two GitHub Pages details that waste an afternoon if missed:
+It was added, **tried, and reverted**, because automatic signing will not add
+this capability on its own and a device build fails outright without it:
 
-- Jekyll ignores any directory starting with a dot, so `.well-known` is not
-  published unless the repo has a `.nojekyll` file at its root.
-- The file has no extension and must come back as JSON. Pages serves unknown
-  types as `application/octet-stream`; Apple's CDN has tolerated that for
-  years, but if the association refuses to validate this is the first thing
-  to check.
+```
+Provisioning profile "iOS Team Provisioning Profile: com.colewilliams.firelight"
+doesn't include the Associated Domains capability.
+```
 
-## 2. The capability
-
-`com.apple.developer.associated-domains` has to be on the App ID and in
-`Firelight.entitlements` as `applinks:scwill12.github.io`. Unlike the other
-capabilities, Xcode's automatic signing will not add this one on its own —
-it has to be ticked in the developer portal first.
-
-Worth remembering from CarPlay: **an entitlement in the file that the App ID
-does not carry fails provisioning outright**. Add the capability first, then
-the entitlement.
+That is the CarPlay lesson again: an entitlement the App ID does not carry
+fails provisioning, so it stays out of the file until the capability exists.
 
 ## 3. The App Store fallback has an ordering problem
 
