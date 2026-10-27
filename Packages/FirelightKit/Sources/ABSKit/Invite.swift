@@ -1,46 +1,40 @@
 import Foundation
 
-/// An invitation to one Audiobookshelf account, as it travels in a link.
+/// An invitation to one Audiobookshelf account, as it travels in a code.
 ///
-/// The password here is a **temporary** one the admin never tells anyone. It
-/// exists only so the invited person's first request can authenticate; the
-/// redemption screen immediately replaces it with one they choose, and
-/// Audiobookshelf invalidates every other session for the account when it
-/// does. A link that has been redeemed is a spent match.
+/// Four things, and no more: every field here is characters somebody has to
+/// paste. The server's name and the person's own name are **not** carried —
+/// they are read from the server once the code has been redeemed, which makes
+/// the code a third shorter and the greeting more accurate than anything the
+/// admin could have typed.
 ///
-/// That is the whole security model, and it is worth being plain about its
-/// limit: between sending and redeeming, this link *is* the account. Anyone
-/// who reads it first gets in, and the person it was meant for then finds
-/// their password already changed — which is at least loud rather than silent.
+/// The password is a **temporary** one the admin never sees. It exists only so
+/// the first request can authenticate; the invitation screen immediately
+/// replaces it with one the invited person chooses, and Audiobookshelf
+/// invalidates every other session for the account when it does. A redeemed
+/// code is a spent match.
+///
+/// The limit is worth stating plainly: between sending and redeeming, this
+/// code *is* the account. Whoever reads it first gets in, and the person it
+/// was meant for then finds their password already changed — which is at
+/// least loud rather than silent.
 public struct Invite: Sendable, Hashable, Codable {
-    /// The server to sign in to.
     public var serverURL: URL
-    /// What to call the server on screen, so the invitation names something
-    /// the person recognises rather than an address.
-    public var serverName: String
-    /// The account that was created for them.
     public var username: String
-    /// What to greet them as. Often the same as `username`, not always.
-    public var displayName: String
-    /// Valid only until the first password is set; see the type's note.
     public var temporaryPassword: String
-    /// When this stops being offered. Enforced by the app, not the server —
-    /// Audiobookshelf has no notion of an invitation, so a crafted request
-    /// ignores this. It limits honest mistakes, not attackers.
+    /// Enforced by the app, not the server. Audiobookshelf has no notion of
+    /// an invitation, so a crafted request ignores this: it limits honest
+    /// mistakes, not attackers.
     public var expiresAt: Date
 
     public init(
         serverURL: URL,
-        serverName: String,
         username: String,
-        displayName: String,
         temporaryPassword: String,
         expiresAt: Date
     ) {
         self.serverURL = serverURL
-        self.serverName = serverName
         self.username = username
-        self.displayName = displayName
         self.temporaryPassword = temporaryPassword
         self.expiresAt = expiresAt
     }
@@ -48,78 +42,80 @@ public struct Invite: Sendable, Hashable, Codable {
     public func hasExpired(now: Date = .now) -> Bool { now > expiresAt }
 }
 
-/// Puts an invitation into a link and takes it out again.
+/// Turns an invitation into something you can paste into a message, and back.
 ///
-/// The link is an ordinary `https://` one, so it is clickable everywhere, it
-/// renders as a titled card rather than a wall of characters, and it still
-/// does something useful when Firelight is not installed — the page it points
-/// at offers the App Store.
+/// Not a link. A tappable `https://` link needs a domain to host its landing
+/// page, and a client for self-hosted servers has no business routing
+/// invitations through its author's website — even a static page that
+/// receives nothing. A code needs no infrastructure, cannot rot when a site
+/// moves, and names nobody's server but the one it is for.
 ///
-/// **The payload lives in the fragment, and that is a security decision, not
-/// a formatting one.** Everything after `#` is never sent to a server. A
-/// query string would be: iMessage, Slack, WhatsApp and the rest all fetch
-/// links to build their previews, so a credential in the query would be
-/// handed to every one of those companies before the recipient ever taps it.
-/// In the fragment, the preview bot fetches a page that knows nothing.
+/// The cost is one extra step, and it is nearly free: the message has to say
+/// "install Firelight" either way, so "install Firelight and paste this" is
+/// the same instruction.
 ///
-/// The encoding is base64url, which is **not encryption**. Whoever holds the
-/// link holds the credential until it is redeemed.
-public enum InviteLink {
-    /// The page that greets someone without the app.
-    ///
-    /// At the root of the domain rather than under `/firelight`, for two
-    /// reasons: it cannot collide with the project repository's own Pages
-    /// site if that is ever turned on, and it makes the link shorter.
-    public static let webHost = "scwill12.github.io"
-    public static let webPath = "/join"
+/// The payload is base64url of compact JSON. That is **encoding, not
+/// encryption** — whoever holds the code holds the credential until it is
+/// redeemed. Compression was tried and removed: at this size zlib saved three
+/// characters and added a way to fail.
+public enum InviteCode {
+    /// Marks the format, so a later one can be told apart and a stray paste
+    /// is recognisable as an invitation rather than nonsense.
+    public static let prefix = "FL1"
 
-    /// Kept for testing and for a device that has the app but no association
-    /// yet. Links sent to people are always the `https` form.
-    public static let scheme = "firelight"
-    public static let host = "invite"
-
-    public static func url(for invite: Invite) throws -> URL {
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = webHost
-        components.path = webPath
-        components.fragment = base64url(try JSONEncoder().encode(invite))
-        guard let url = components.url else { throw InviteError.malformed }
-        return url
+    public static func make(from invite: Invite) throws -> String {
+        prefix + base64url(try JSONEncoder().encode(Payload(invite)))
     }
 
-    public static func invite(from url: URL) throws -> Invite {
-        guard let encoded = payload(in: url) else { throw InviteError.notAnInvite }
-        guard let data = data(fromBase64url: encoded) else { throw InviteError.malformed }
-        return try JSONDecoder().decode(Invite.self, from: data)
+    public static func invite(from code: String) throws -> Invite {
+        // Messages wrap, people add spaces, and a code dictated over the
+        // phone arrives with whatever the listener typed.
+        let cleaned = code.filter { !$0.isWhitespace }
+        guard cleaned.hasPrefix(prefix) else { throw InviteError.notAnInvite }
+
+        let body = String(cleaned.dropFirst(prefix.count))
+        guard !body.isEmpty, let data = data(fromBase64url: body) else {
+            throw InviteError.malformed
+        }
+        guard let payload = try? JSONDecoder().decode(Payload.self, from: data) else {
+            throw InviteError.malformed
+        }
+        return try payload.invite()
     }
 
-    /// Accepts either form: the web link people are sent, or the custom
-    /// scheme, which is how this is exercised before the domain association
-    /// is in place.
-    private static func payload(in url: URL) -> String? {
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    /// Single-letter keys, because every byte is a character to paste. The
+    /// readable names live on `Invite`, where they are read.
+    private struct Payload: Codable {
+        let u: String   // server URL
+        let n: String   // username
+        let p: String   // temporary password
+        let e: Int      // expiry, epoch seconds
 
-        if url.scheme?.lowercased() == "https",
-           url.host()?.lowercased() == webHost,
-           url.path() == webPath,
-           let fragment = components?.fragment, !fragment.isEmpty {
-            return fragment
+        init(_ invite: Invite) {
+            u = invite.serverURL.absoluteString
+            n = invite.username
+            p = invite.temporaryPassword
+            e = Int(invite.expiresAt.timeIntervalSince1970)
         }
-        if url.scheme?.lowercased() == scheme, url.host()?.lowercased() == host {
-            if let fragment = components?.fragment, !fragment.isEmpty { return fragment }
-            return components?.queryItems?.first { $0.name == "d" }?.value.flatMap {
-                $0.isEmpty ? nil : $0
-            }
+
+        func invite() throws -> Invite {
+            guard let url = URL(string: u), url.scheme != nil, url.host() != nil,
+                  !n.isEmpty, !p.isEmpty
+            else { throw InviteError.malformed }
+            return Invite(
+                serverURL: url,
+                username: n,
+                temporaryPassword: p,
+                expiresAt: Date(timeIntervalSince1970: TimeInterval(e))
+            )
         }
-        return nil
     }
 
     // MARK: - base64url
 
-    /// Standard base64 uses `+` and `/`, which a URL has its own uses for, and
-    /// `=` padding that readers disagree about. RFC 4648's URL alphabet
-    /// avoids all three.
+    /// Standard base64 uses `+` and `/`, which a messaging app may mangle if
+    /// it decides a code looks like a URL, and `=` padding that readers
+    /// disagree about. RFC 4648's URL alphabet avoids all three.
     static func base64url(_ data: Data) -> String {
         data.base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")
@@ -131,7 +127,6 @@ public enum InviteLink {
         var base64 = text
             .replacingOccurrences(of: "-", with: "+")
             .replacingOccurrences(of: "_", with: "/")
-        // Put back the padding the URL form drops.
         let remainder = base64.count % 4
         if remainder > 0 { base64 += String(repeating: "=", count: 4 - remainder) }
         return Data(base64Encoded: base64)
@@ -144,13 +139,16 @@ public enum InviteError: Error, Sendable, Equatable {
     case expired
 }
 
-/// Makes the temporary password that only ever travels in the link.
+/// Makes the temporary password that only ever travels in the code.
 public enum TemporaryPassword {
-    /// Unambiguous characters only: this is never typed by a person, but it
-    /// may well be read aloud or copied by hand when a link fails.
+    /// Unambiguous characters only. This is never typed by a person on
+    /// purpose, but a code does sometimes get read aloud when a paste fails.
     private static let alphabet = Array("abcdefghjkmnpqrstuvwxyz23456789")
 
-    public static func make(length: Int = 24) -> String {
+    /// Sixteen characters of a 31-letter alphabet is about 79 bits, which is
+    /// far more than something that dies on first use needs — and twenty-four
+    /// made the code visibly longer for no gain.
+    public static func make(length: Int = 16) -> String {
         String((0..<max(length, 12)).map { _ in
             alphabet[Int.random(in: 0..<alphabet.count)]
         })

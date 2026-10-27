@@ -2,94 +2,88 @@ import Foundation
 import Testing
 @testable import ABSKit
 
-@Suite("Invitation links")
-struct InviteTests {
+@Suite("Invitation codes")
+struct InviteCodeTests {
     private func sample(
         expiresIn: TimeInterval = 7 * 24 * 60 * 60,
         username: String = "sam"
     ) -> Invite {
         Invite(
             serverURL: URL(string: "https://books.example.com:13378/abs")!,
-            serverName: "The Library",
             username: username,
-            displayName: "Sam",
             temporaryPassword: "abcdefghjkmn",
             expiresAt: Date(timeIntervalSince1970: 1_760_000_000).addingTimeInterval(expiresIn)
         )
     }
 
-    @Test("An invitation survives the round trip through a link")
+    @Test("An invitation survives the round trip through a code")
     func roundTrips() throws {
         let invite = sample()
-        let url = try InviteLink.url(for: invite)
-        #expect(try InviteLink.invite(from: url) == invite)
+        let code = try InviteCode.make(from: invite)
+        #expect(try InviteCode.invite(from: code) == invite)
     }
 
     @Test("The server's own sub-path is preserved")
     func keepsTheSubPath() throws {
         // Audiobookshelf can live under a RouterBasePath; dropping it would
         // point the invited person at a server that is not there.
-        let url = try InviteLink.url(for: sample())
-        let decoded = try InviteLink.invite(from: url)
+        let decoded = try InviteCode.invite(from: try InviteCode.make(from: sample()))
         #expect(decoded.serverURL.absoluteString == "https://books.example.com:13378/abs")
     }
 
-    @Test("The password is not legible in the link")
+    @Test("The password is not legible in the code")
     func passwordIsNotPlainText() throws {
-        let url = try InviteLink.url(for: sample())
-        // Encoding, not encryption — but a chat preview should not render
+        let code = try InviteCode.make(from: sample())
+        // Encoding, not encryption — but a message preview should not render
         // somebody's password as readable text beside their name.
-        #expect(!url.absoluteString.contains("abcdefghjkmn"))
-        #expect(!url.absoluteString.lowercased().contains("password"))
+        #expect(!code.contains("abcdefghjkmn"))
+        #expect(!code.lowercased().contains("example.com"))
     }
 
-    @Test("The link is an ordinary https one, so it works without the app")
-    func isAWebLink() throws {
-        let url = try InviteLink.url(for: sample())
-        #expect(url.scheme == "https")
-        #expect(url.host() == InviteLink.webHost)
-        #expect(url.path() == InviteLink.webPath)
+    @Test("It is marked as an invitation, so a stray paste is recognisable")
+    func carriesItsPrefix() throws {
+        #expect(try InviteCode.make(from: sample()).hasPrefix("FL1"))
     }
 
-    @Test("The payload is in the fragment, which never reaches a server")
-    func payloadIsInTheFragment() throws {
-        let url = try InviteLink.url(for: sample())
-        // Link previews fetch the URL. A query string would hand the
-        // credential to every preview service that saw the message.
-        #expect(url.query() == nil)
-        #expect(url.fragment() != nil)
+    @Test("Short enough to read as a code rather than a paragraph")
+    func staysShort() throws {
+        let code = try InviteCode.make(from: sample())
+        // Carrying the server's name and the person's name here instead of
+        // reading them from the server after login cost about forty.
+        #expect(code.count < 140, "code was \(code.count) characters")
     }
 
-    @Test("The custom scheme still works, for testing before the domain is live")
-    func acceptsTheCustomScheme() throws {
+    @Test("Whitespace a message added is ignored")
+    func toleratesWrapping() throws {
         let invite = sample()
-        let encoded = InviteLink.base64url(try JSONEncoder().encode(invite))
-        for form in ["firelight://invite#\(encoded)", "firelight://invite?d=\(encoded)"] {
-            #expect(try InviteLink.invite(from: URL(string: form)!) == invite)
-        }
+        let code = try InviteCode.make(from: invite)
+        let mangled = "  " + code.prefix(20) + "\n" + code.dropFirst(20) + " \n"
+        #expect(try InviteCode.invite(from: String(mangled)) == invite)
     }
 
-    @Test("A link for something else is refused, not misread")
-    func refusesOtherLinks() {
-        for other in ["https://example.com/invite#abc",
-                      "https://\(InviteLink.webHost)/somewhere-else#abc",
-                      "firelight://open?d=abc",
-                      "otherapp://invite?d=abc"] {
-            #expect(throws: InviteError.self) {
-                try InviteLink.invite(from: URL(string: other)!)
-            }
-        }
-    }
-
-    @Test("A damaged payload is refused rather than half-read")
-    func refusesDamagedPayloads() {
-        for bad in ["firelight://invite",
-                    "firelight://invite?d=",
-                    "https://\(InviteLink.webHost)\(InviteLink.webPath)",
-                    "https://\(InviteLink.webHost)\(InviteLink.webPath)#YWJj"] {
+    @Test("Something that is not an invitation is refused, not misread")
+    func refusesOtherText() {
+        for other in ["", "hello", "https://example.com", "FL2abc", "fl1abc"] {
             #expect(throws: (any Error).self) {
-                try InviteLink.invite(from: URL(string: bad)!)
+                try InviteCode.invite(from: other)
             }
+        }
+    }
+
+    @Test("A damaged code is refused rather than half-read")
+    func refusesDamagedCodes() {
+        for bad in ["FL1", "FL1!!!!", "FL1YWJj"] {
+            #expect(throws: (any Error).self) {
+                try InviteCode.invite(from: bad)
+            }
+        }
+    }
+
+    @Test("A truncated code is refused rather than decoding to nonsense")
+    func refusesTruncation() throws {
+        let code = try InviteCode.make(from: sample())
+        #expect(throws: (any Error).self) {
+            try InviteCode.invite(from: String(code.dropLast(10)))
         }
     }
 
@@ -100,33 +94,39 @@ struct InviteTests {
         #expect(invite.hasExpired(now: invite.expiresAt.addingTimeInterval(1)))
     }
 
-    @Test("base64url avoids the characters a URL needs for itself")
-    func base64urlIsUrlSafe() {
-        // Bytes chosen to force + and / in standard base64.
+    @Test("base64url avoids characters a messaging app would mangle")
+    func base64urlIsSafe() {
         let data = Data([0xFB, 0xEF, 0xFE, 0xFF, 0x3F, 0x3E])
-        let encoded = InviteLink.base64url(data)
+        let encoded = InviteCode.base64url(data)
         #expect(!encoded.contains("+"))
         #expect(!encoded.contains("/"))
         #expect(!encoded.contains("="))
-        #expect(InviteLink.data(fromBase64url: encoded) == data)
+        #expect(InviteCode.data(fromBase64url: encoded) == data)
     }
 
     @Test("Padding is restored for every length")
     func restoresPadding() {
         for length in 1...16 {
             let data = Data((0..<length).map { UInt8($0) })
-            let encoded = InviteLink.base64url(data)
-            #expect(InviteLink.data(fromBase64url: encoded) == data, "length \(length)")
+            #expect(InviteCode.data(fromBase64url: InviteCode.base64url(data)) == data,
+                    "length \(length)")
         }
     }
 
-    @Test("A name with spaces and punctuation survives")
+    @Test("A username with punctuation survives")
     func handlesAwkwardNames() throws {
-        var invite = sample(username: "sam.o'neill")
-        invite.displayName = "Sam O'Neill — Dad's iPad"
-        invite.serverName = "Books & Things"
-        let decoded = try InviteLink.invite(from: try InviteLink.url(for: invite))
-        #expect(decoded == invite)
+        let invite = sample(username: "sam.o'neill")
+        #expect(try InviteCode.invite(from: try InviteCode.make(from: invite)) == invite)
+    }
+
+    @Test("A code naming no server or no user is refused")
+    func refusesIncompletePayloads() {
+        for payload in [#"{"u":"","n":"sam","p":"x","e":1}"#,
+                        #"{"u":"https://a.example.com","n":"","p":"x","e":1}"#,
+                        #"{"u":"https://a.example.com","n":"sam","p":"","e":1}"#] {
+            let code = InviteCode.prefix + InviteCode.base64url(Data(payload.utf8))
+            #expect(throws: InviteError.self) { try InviteCode.invite(from: code) }
+        }
     }
 }
 
@@ -134,7 +134,7 @@ struct InviteTests {
 struct TemporaryPasswordTests {
     @Test("Long enough to be worth generating")
     func hasAMinimumLength() {
-        #expect(TemporaryPassword.make().count == 24)
+        #expect(TemporaryPassword.make().count == 16)
         #expect(TemporaryPassword.make(length: 4).count == 12)
     }
 
